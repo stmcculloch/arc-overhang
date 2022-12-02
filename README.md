@@ -28,11 +28,11 @@ Earlier this year, I accidentally discovered you can print an overhang that supp
 
 Then I tried to recreate the effect on purpose
 
-![first attempts](examples\early_work_2.jpg)
+![first attempts](examples\early_work_2.png)
 
 And fine tune it: 
 
-![first attempts2](examples\early_work_1.jpg)
+![first attempts2](examples\early_work_1.png)
 
 Here's what this effect looks like while printing:  
 
