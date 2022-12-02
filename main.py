@@ -78,10 +78,10 @@ with open('input/start.gcode','r') as start_gcode, open(OUTPUT_FILE_NAME,'a') as
 
 # Make the base polygon a randomly generated shape
 base_poly = Polygon(util.generate_polygon(center=(117.5, 117.5),
-                                         avg_radius=10,
+                                         avg_radius=35,
                                          irregularity=0.9,
                                          spikiness=0.4,
-                                         num_vertices=10))
+                                         num_vertices=20))
 
 # Find starting edge (in this implementation, it just finds the largest edge to start from.
 # TODO Allow multiple starting points

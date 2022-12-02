@@ -95,6 +95,8 @@ By default, the output gcode should print fine on most standard desktop FDM prin
 
 ## 9. How to Install
 
+If you want to try the prints without installing, I added some test print gcode files in the root directory that you can directly download. They should print fine on most printers although you may need to manually adjust the gcode so that it works with your printer.
+
 1. Clone this repo to your computer
 2. Install python 3 and any packages you don't have.
 
