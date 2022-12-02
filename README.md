@@ -6,7 +6,7 @@ This is what the algorithm looks like:
 
 ![arc-overhang visualization](examples/gcode_vis3.gif)
 
-## 1. Brief Description
+## 1. Brief Explanation
 To understand how this works, you need to know 3 things:  
 
 1. You can print 90° overhangs by wrapping filament around itself in concentric **arcs**. You may have seen the [fullcontrol.xyz overhang challenge](https://fullcontrol.xyz/#/models/b70938). This uses the exact same principle.
@@ -24,6 +24,10 @@ Here's what this effect looks like while printing:
 3. Recursively print **arcs** until the space is filled. This can be used to print almost any artibtrary shape:
    
 ![arc starting on another arc](examples/arbitrary_shape.jpg)
+
+I've printed ridiculously large overhangs using this method:
+
+![ridiculous overhang](examples/ridiculous_overhang.gif)
 
 ## 2. Background
 
@@ -50,7 +54,7 @@ Packages used are:
 - [geopandas](https://geopandas.org/en/stable/index.html) and [matplotlib](https://matplotlib.org/) for plotting
 - [numpy](https://numpy.org/) for math stuff
 
-### 4. How it works
+### 4. How it Works
 
 ![algorithm rainbow visualization](examples/algorithm_explained.png)
 
@@ -64,13 +68,13 @@ Packages used are:
 
 5. **Turn those arcs into gcode** Mainly just turning coordinates into strings using string formatting.
 
-## 5. Gcode generation
+## 5. Gcode Generation
 
 This program also generates a demonstration tower so that it is easy to print this for yourself.
 
 ![generated gcode](examples/gcode_generator.png)
 
-## 6. Suggested print settings
+## 6. Suggested Print Settings
 
 There are a few rules of thumb for actually printing this stuff: 
 
@@ -85,7 +89,7 @@ The overhang print quality is greatly improved when the material solidifies as q
 
 This algorithm was implemented using a depth-first approach, where one branch grows as long as possible before splitting. I think it would be more reliable if done using a breadth-first approach where all the branches on a certain depth are created before moving one layer deeper. This method sounded more complicated though so I didn't do it.
 
-## 8. Printer compatibility
+## 8. Printer Compatibility
 
 By default, the output gcode should print fine on most standard desktop FDM printers running Marlin firmware and a 0.4mm nozzle. If your bed is smaller than 150x150mm you'll want to adjust some settings to make sure the print fits inside the printable area. If you have a different size nozzle, search for `LINE_WIDTH` and adjust as necessary.
 
