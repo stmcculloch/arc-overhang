@@ -57,7 +57,7 @@ recursion_info = {
 }
 
 # Delete all previous images
-current_directory = "C:/Users/Steven/Documents/Python/ArcOverhang/"
+current_directory = "./"
 files_in_directory = os.listdir(current_directory)
 for item in files_in_directory:
     if item.endswith(".png"):

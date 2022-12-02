@@ -98,16 +98,11 @@ By default, the output gcode should print fine on most standard desktop FDM prin
 If you want to try the prints without installing, I added some test print gcode files in the root directory that you can directly download. They should print fine on most printers although you may need to manually adjust the gcode so that it works with your printer.
 
 1. Clone this repo to your computer
-2. Install python 3 and any packages you don't have.
+2. Install python 3 and required packages.
 
     ```
-    pip install shapely 
-    pip install geopandas
-    pip install numpy
-    pip install imageio
-    pip install moviepy 
+    python3 -m pip install -r requirements.txt
     ```
-    *imageio and moviepy aren't required if you don't want gif/mp4 output*
 
 3. Check out the parameters at the top of `main.py` for print settings, and to change how the arcs are generated. 
 4. Change the shape generation parameters to customize the shape, size, and spikiness of the random shape. Or create your own shape. It should work on any `Polygon`.

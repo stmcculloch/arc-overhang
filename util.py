@@ -144,6 +144,13 @@ def image_number(list_of_files):
     else:
         return "1"
 
+def get_exterior(poly):
+    return [
+        coord
+        for geom in getattr(poly, 'geoms', [poly])
+        for coord in geom.exterior.coords
+    ]
+
 def create_arc(circle, remaining_empty_space, ax, depth):
     """
     Turns a circle into an arc
@@ -178,10 +185,13 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
     
     # Remove all the points in the concave section of the crescent shape, turning it into a "D" shape instead
-    arc = []
-    for coord in crescent.exterior.coords:
-        if not coord in remaining_empty_space.exterior.coords:
-            arc.append(coord)
+    crescent_exterior = get_exterior(crescent)
+    empty_exterior = get_exterior(remaining_empty_space)
+    arc = [
+        coord
+        for coord in crescent_exterior
+        if not coord in empty_exterior
+    ]
 
     # Make sure first point is on one corner "D", and last point is on the other. 
     # This makes sure the arcs start from one end, and go all the away around to the other
