@@ -1,3 +1,4 @@
 test_prints/
 .vscode/
 __pycache__/
+.env/
