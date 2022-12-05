@@ -33,7 +33,7 @@ BASE_HEIGHT = 2 # thickness of circular base
 # Hard-coded recursion information
 THRESHOLD = LINE_WIDTH / 2  # How much of a 'buffer' the arcs leave around the base polygon. Don't set it negative or bad things happen.
 OUTPUT_FILE_NAME = "output/output.gcode"
-R_MAX = 50  # maximum radius for a circle
+R_MAX = 30  # maximum radius for a circle
 N = 40      # number of points per circle
 
 # Create a figure that we can plot stuff onto
@@ -78,9 +78,9 @@ with open('input/start.gcode','r') as start_gcode, open(OUTPUT_FILE_NAME,'a') as
 
 # Make the base polygon a randomly generated shape
 base_poly = Polygon(util.generate_polygon(center=(117.5, 117.5),
-                                         avg_radius=35,
-                                         irregularity=0.9,
-                                         spikiness=0.4,
+                                         avg_radius=10,
+                                         irregularity=0.5,
+                                         spikiness=0.2,
                                          num_vertices=20))
 
 # Find starting edge (in this implementation, it just finds the largest edge to start from.
@@ -128,7 +128,8 @@ while curr_z < BASE_HEIGHT:
 
 with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
     gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
-    gcode_file.write(";Generating tower\n") 
+    gcode_file.write(";Generating tower\n")
+    gcode_file.write("M107 S255 ;Turn on fan to max power\n") 
     
 while curr_z < OVERHANG_HEIGHT:
     util.write_gcode(OUTPUT_FILE_NAME, starting_line.buffer(LINE_WIDTH), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*5, close_loop=True)
