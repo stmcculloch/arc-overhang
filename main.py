@@ -129,7 +129,7 @@ while curr_z < BASE_HEIGHT:
 with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
     gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
     gcode_file.write(";Generating tower\n")
-    gcode_file.write("M107 S255 ;Turn on fan to max power\n") 
+    gcode_file.write("M106 S255 ;Turn on fan to max power\n") 
     
 while curr_z < OVERHANG_HEIGHT:
     util.write_gcode(OUTPUT_FILE_NAME, starting_line.buffer(LINE_WIDTH), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*5, close_loop=True)
