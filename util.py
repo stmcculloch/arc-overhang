@@ -120,7 +120,7 @@ def create_circle(x, y, radius, n):
     - with specified radius
     - using n segments
     """
-    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, 2*np.pi, n)])
+    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, 2*np.pi, int(n))])
 
 def create_rect(x, y, length, width, from_center):
     """
@@ -364,7 +364,7 @@ def generate_polygon(center: Tuple[float, float], avg_radius: float,
     # now generate the points
     points = []
     angle = random.uniform(0, 2 * math.pi)
-    for i in range(num_vertices):
+    for i in range(int(num_vertices)):
         radius = clip(random.gauss(avg_radius, spikiness), 0, 2 * avg_radius)
         point = (center[0] + radius * math.cos(angle),
                  center[1] + radius * math.sin(angle))
@@ -390,14 +390,14 @@ def random_angle_steps(steps: int, irregularity: float) -> List[float]:
     lower = (2 * math.pi / steps) - irregularity
     upper = (2 * math.pi / steps) + irregularity
     cumsum = 0
-    for i in range(steps):
+    for i in range(int(steps)):
         angle = random.uniform(lower, upper)
         angles.append(angle)
         cumsum += angle
 
     # normalize the steps so that point 0 and point n+1 are the same
     cumsum /= (2 * math.pi)
-    for i in range(steps):
+    for i in range(int(steps)):
         angles[i] /= cumsum
     return angles
 
