@@ -51,10 +51,10 @@ I programmed this in Python 3.
 
 Packages used are:
 - [shapely 1.8.5](https://shapely.readthedocs.io/en/stable/) for many useful 2D shape and geometry tools.
-- [geopandas](https://geopandas.org/en/stable/index.html) and [matplotlib](https://matplotlib.org/) for plotting.
-- [numpy](https://numpy.org/) for math stuff.
-- [imageio](https://imageio.readthedocs.io/en/stable/user_guide/installation.html) for image & gif generation.
-- [moviepy](https://pypi.org/project/moviepy/) for mp4 video generation.
+- [geopandas](https://geopandas.org/en/stable/index.html) and [matplotlib](https://matplotlib.org/) for plotting
+- [numpy](https://numpy.org/) for math stuff
+- [imageio](https://imageio.readthedocs.io/en/stable/user_guide/installation.html) for image generation 
+-[moviepy](https://pypi.org/project/moviepy/) gif install
 
 ### 4. How it Works
 
