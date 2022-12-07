@@ -44,6 +44,10 @@ def proces():
     spikiness = float(Entry.get(E13))
     global num_vertices
     num_vertices = float(Entry.get(E14))
+    global x_axis
+    x_axis = float(Entry.get(E15))
+    global y_axis
+    y_axis = float(Entry.get(E16))
     top.destroy()
 
 
@@ -64,6 +68,8 @@ L11 = Label(top, text="Average Rad",).grid(row=11,column=0)
 L12 = Label(top, text="irregularity",).grid(row=12,column=0)
 L13 = Label(top, text='spikiness',).grid(row=13,column=0)
 L14 = Label(top, text='num vertices',).grid(row=14,column=0)
+L15 = Label(top,text="X Axis Size",).grid(row=15,column=0)
+L16 = Label(top,text="X Axis Size",).grid(row=16,column=0)
 
 
 
@@ -95,6 +101,10 @@ E13 = Entry(top, bd=5)
 E13.grid(row=13, column=1)
 E14 = Entry(top, bd=5)
 E14.grid(row=14, column=1)
+E15 = Entry(top, bd=5)
+E15.grid(row=15, column=1)
+E16 = Entry(top, bd=5)
+E16.grid(row=16, column=1)
 
 E1.insert(1,'.4')
 E2.insert(1,'.4')
@@ -110,6 +120,8 @@ E11.insert(11,'10')
 E12.insert(12,'.2')
 E13.insert(13,'.2')
 E14.insert(14,'15')
+E15.insert(15,'117.5')
+E16.insert(16,'117.5')
 
 B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
 
@@ -193,7 +205,7 @@ with open('input/start.gcode','r') as start_gcode, open(OUTPUT_FILE_NAME,'a') as
 # base_poly = create_rect(RECT_X, RECT_Y, RECT_LENGTH, RECT_WIDTH, True)
 
 # Make the base polygon a randomly generated shape
-base_poly = Polygon(util.generate_polygon(center=(117.5, 117.5),
+base_poly = Polygon(util.generate_polygon(center=(x_axis, y_axis),
                                          avg_radius=avg_radius,
                                          irregularity=irregularity,
                                          spikiness=spikiness,
