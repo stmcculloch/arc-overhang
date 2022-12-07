@@ -42,7 +42,41 @@ def longest_edge(poly):
 
     return start, end
 
+def longest_inner_edge(poly):
+    """
+    Finds the longest edge in a polygon
+    
+    Parameters
+    ----------
+    poly: Polygon
+        The polygon that we want to find the longest edge of
+        
+    Returns
+    -------
+    start: Point
+        First point of the longest edge
+    
+    end: Point
+        Other point of the longest edge    
+    """
+    print(poly.interiors[0].coords)
+    poly_coords = list(poly.interiors[0].coords)
+    max_length = 0
+    prev_p = Point(poly_coords[-1])
+    for p in poly_coords:
+        curr_p = Point(p)
+        length = curr_p.distance(prev_p)
+        if length > max_length:
+            max_length = length
+            start = prev_p
+            end = curr_p
+
+        prev_p = curr_p
+
+    return start, end
+
 def get_farthest_point(arc, base_poly, remaining_empty_space):
+    #print("arc", arc, "\nbase_poly", base_poly, "\nremaining_empty_space", remaining_empty_space)
     """
     Find the point on a given arc that is farthest away from the base polygon.
     In other words, the point on which the largest circle can be drawn without going outside the base polygon.
@@ -97,21 +131,37 @@ def get_farthest_point(arc, base_poly, remaining_empty_space):
     point_on_poly = nearest_points(base_poly, farthest_point)[0]
     return farthest_point, longest_distance, point_on_poly
 
-def get_boundary_line(poly, p1):
+def get_boundary_line(base_poly, p1):
     """
     Find the geometry that the arcs will build out to approach.
     In this implementation, it is simply the base_poly without the starting line 
     Arcs cannot start from, or terminate on this line.
     """
-    poly_coords = poly.exterior.coords
-    for i, p in enumerate(poly_coords):
-        # find the starting point in the polygon
-        if p == list(p1.coords)[0]:
-            # arrange the boundary line so first coordinate is at one end, and the final coordinate is at the end
-            base_poly_1 = poly_coords[:i+1]
-            base_poly_2 = poly_coords[i+1:]
-            base_poly_2 += base_poly_1
-            return base_poly_2
+
+    if p1.geom_type == 'Polygon':
+        # remove any points that are in polygon.
+        base_poly_2 = []
+        poly_coords = base_poly.exterior.coords
+        for i, p in enumerate(poly_coords):
+            # find the starting point in the polygon
+            if p not in list(p1.exterior.coords):
+                # arrange the boundary line so first coordinate is at one end, and the final coordinate is at the end
+                base_poly_2.append(p)
+
+        return base_poly_2
+
+    elif p1.geom_type == 'Point':
+        poly_coords = base_poly.exterior.coords
+        for i, p in enumerate(poly_coords):
+            # find the starting point in the polygon
+            if p == list(p1.coords)[0]:
+                # arrange the boundary line so first coordinate is at one end, and the final coordinate is at the end
+                base_poly_1 = poly_coords[:i+1]
+                base_poly_2 = poly_coords[i+1:]
+                base_poly_2 += base_poly_1
+                return base_poly_2
+
+    
 
 def create_circle(x, y, radius, n):
     """
@@ -179,7 +229,6 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     crescent = circle.intersection(remaining_empty_space)
     
     # Plot the arcs. Comment the following 2 lines to make the code run faster
-    # Set color to 
     crescent_geoseries = gpd.GeoSeries(crescent)
     crescent_geoseries.plot(ax=ax[0], color='none', edgecolor='black', linewidth=1) # set color='none' for black and white plotting
     crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
@@ -187,11 +236,16 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     # Remove all the points in the concave section of the crescent shape, turning it into a "D" shape instead
     crescent_exterior = get_exterior(crescent)
     empty_exterior = get_exterior(remaining_empty_space)
-    arc = [
-        coord
-        for coord in crescent_exterior
-        if not coord in empty_exterior
-    ]
+    close_loop = True
+    arc = []
+    for coord in crescent_exterior:
+        if not coord in empty_exterior:
+            arc.append(coord)
+        
+        else: 
+            close_loop = False #the arc is not a full circle
+            print("here AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
+
 
     # Make sure first point is on one corner "D", and last point is on the other. 
     # This makes sure the arcs start from one end, and go all the away around to the other
@@ -199,7 +253,7 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     start, _ = longest_edge(arc)
     fixed_arc = get_boundary_line(arc, start)
                 
-    return Polygon(fixed_arc) 
+    return Polygon(fixed_arc) , close_loop
 
 def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, depth, 
                  filename_list, r_max, line_width, gcode_file, layer_height, filament_diameter, e_multiplier, feedrate):
@@ -241,13 +295,14 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
         next_circle = create_circle(next_point.x, next_point.y, r, n)
       
         # Plot arc
-        next_arc = create_arc(next_circle, remaining_empty_space, ax, depth)
+        next_arc, close_loop = create_arc(next_circle, remaining_empty_space, ax, depth)
         curr_arc = Polygon(next_arc)
         longest_distance = r
         r += line_width
         
-        # Write gcode    
-        write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, False)
+        # Write gcode
+        # if arc is a full circle, then make every movement a printing move. Otherwise, do a travel move between the tips of the arc    
+        write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, close_loop)
         
         # Create image
         #filename = image_number(filename_list)   

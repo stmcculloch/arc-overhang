@@ -10,7 +10,7 @@ import imageio
 import os
 
 # 3D printing parameters
-LINE_WIDTH = 0.4  # AKA the increase in radius as arcs grow from a central point.
+LINE_WIDTH = 0.31  # AKA the increase in radius as arcs grow from a central point.
 LAYER_HEIGHT = 0.4  # Thicker seems to be more stable due to physics.
 ARC_E_MULTIPLIER = 1.30  # Amount of overextrusion to do while doing the overhangs. This somewhat compensates for the unconstrained filament
 FEEDRATE = 2  # Speed while printing the overhangs. In mm/s. Slower helps make it look cleaner.
@@ -27,8 +27,8 @@ print_settings = {
 }
 
 # Shape generation parameters
-OVERHANG_HEIGHT = 20  # How high the test print is above the build plate
-BASE_HEIGHT = 2 # thickness of circular base
+OVERHANG_HEIGHT = 50  # How high the test print is above the build plate
+BASE_HEIGHT = 0.4 # thickness of circular base
 
 # Hard-coded recursion information
 THRESHOLD = LINE_WIDTH / 2  # How much of a 'buffer' the arcs leave around the base polygon. Don't set it negative or bad things happen.
@@ -74,27 +74,34 @@ with open('input/start.gcode','r') as start_gcode, open(OUTPUT_FILE_NAME,'a') as
         gcode_file.write(line)
 
 # Create base polygon. The base polygon is the shape that will be filled by arcs
-# base_poly = create_rect(RECT_X, RECT_Y, RECT_LENGTH, RECT_WIDTH, True)
+# base_poly = util.create_rect(RECT_X, RECT_Y, RECT_LENGTH, RECT_WIDTH, True)
 
 # Make the base polygon a randomly generated shape
-base_poly = Polygon(util.generate_polygon(center=(117.5, 117.5),
-                                         avg_radius=10,
-                                         irregularity=0.5,
-                                         spikiness=0.2,
-                                         num_vertices=20))
+#base_poly = Polygon(util.generate_polygon(center=(117.5, 117.5),
+#                                         avg_radius=10,
+#                                         irregularity=0.5,
+#                                         spikiness=0.2,
+#                                         num_vertices=20))
+
+outer_circle = util.create_circle(117.5, 117.5, 100, 61)
+inner_circle = util.create_circle(117.5, 117.5, 20, 61)
+
+base_poly = outer_circle.difference(inner_circle)
 
 # Find starting edge (in this implementation, it just finds the largest edge to start from.
 # TODO Allow multiple starting points
 # TODO Come up with some way to determine starting edges based on geometry of previous layer
  
-p1, p2 = util.longest_edge(base_poly)
-starting_line = LineString([p1, p2])
+#p1, p2 = Point(list(inner_circle.exterior.coords)[0]), Point(list(inner_circle.exterior.coords)[-2])
+#starting_line = LineString([p1, p2])
+
+starting_poly = inner_circle
 
 # Copy the base polygon, but exclude the starting (longest) line, turning it from a closed Polygon to an open LineString
-boundary_line = LineString(util.get_boundary_line(base_poly, p1))
+boundary_line = LineString(util.get_boundary_line(base_poly, starting_poly))
 
 # Create the first arc
-starting_point, r_start, r_farthest = util.get_farthest_point(starting_line, boundary_line, base_poly)
+starting_point, r_start, r_farthest = util.get_farthest_point(starting_poly, boundary_line, base_poly)
 starting_circle = util.create_circle(starting_point.x, starting_point.y, r_start, N)
 starting_arc = starting_circle.intersection(base_poly)
 
@@ -104,7 +111,7 @@ base_poly_geoseries.plot(ax=ax[0], color='white', edgecolor='black', linewidth=1
 base_poly_geoseries.plot(ax=ax[1], color='white', edgecolor='black', linewidth=1)
 
 # plot starting line
-starting_line_geoseries = gpd.GeoSeries(starting_line)
+starting_line_geoseries = gpd.GeoSeries(starting_poly)
 starting_line_geoseries.plot(ax=ax[0], color='red', linewidth=2)
 
 # Generate 3d printed starting tower
@@ -118,7 +125,7 @@ with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
 while curr_z < BASE_HEIGHT:
     starting_tower_r = r_start + BRIM_WIDTH  
     while starting_tower_r > LINE_WIDTH*2:
-        first_layer_circle = util.create_circle(starting_point.x, starting_point.y, starting_tower_r, N)
+        first_layer_circle = util.create_circle(117.5, 117.5, starting_tower_r, N)
         util.write_gcode(OUTPUT_FILE_NAME, first_layer_circle, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*5, close_loop=True)
         starting_tower_r -= LINE_WIDTH*2
     
@@ -132,7 +139,7 @@ with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
     gcode_file.write("M106 S255 ;Turn on fan to max power\n") 
     
 while curr_z < OVERHANG_HEIGHT:
-    util.write_gcode(OUTPUT_FILE_NAME, starting_line.buffer(LINE_WIDTH), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*5, close_loop=True)
+    util.write_gcode(OUTPUT_FILE_NAME, starting_poly, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*5, close_loop=True)
     with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
         gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
     curr_z += LAYER_HEIGHT
@@ -144,12 +151,12 @@ while r < r_start-THRESHOLD:
     # Create a circle based on point location, radius, n
     next_circle = Polygon(util.create_circle(starting_point.x, starting_point.y, r, N))
     # Plot arc
-    next_arc = util.create_arc(next_circle, base_poly, ax, depth=0)
+    next_arc, close_loop = util.create_arc(next_circle, base_poly, ax, depth=0)
     curr_arc = Polygon(next_arc)
     r += LINE_WIDTH
     
     # Write gcode to file
-    util.write_gcode(OUTPUT_FILE_NAME, next_arc, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, close_loop=False)
+    util.write_gcode(OUTPUT_FILE_NAME, next_arc, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, close_loop)
     
     # Create image
     #file_name = util.image_number(image_name_list)   
@@ -181,7 +188,7 @@ clip.write_videofile("output/output_video.mp4")
 """
 # Build a few layers on top of the overhanging area
 
-for i in range(10):
+for i in range(20):
     util.write_gcode(OUTPUT_FILE_NAME, Polygon(boundary_line).buffer(-THRESHOLD/2), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE*10, close_loop=True)
     with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
         gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z+LAYER_HEIGHT*i)} F500\n")
@@ -191,4 +198,8 @@ with open('input/end.gcode','r') as end_gcode, open(OUTPUT_FILE_NAME,'a') as gco
     for line in end_gcode:
         gcode_file.write(line)
         
+# Create image
+file_name = "output/output.png"  
+plt.savefig(file_name, dpi=600)
+
 plt.show()
