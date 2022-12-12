@@ -21,7 +21,7 @@ Here's what this effect looks like while printing:
 
 ![arc starting on another arc](examples/arc_on_arc.jpg)
 
-3. Recursively print **arcs** until the space is filled. This can be used to print almost any artibtrary shape:
+3. Recursively print **arcs** until the space is filled. This can be used to print almost any arbitrary shape:
    
 ![arc starting on another arc](examples/arbitrary_shape.jpg)
 
