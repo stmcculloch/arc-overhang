@@ -4,9 +4,9 @@ A 3D printer slicing algorithm that lets you print 90° overhangs without suppor
 
 ## 0. Videos
 
-Arc Overhang Initial Video: https://youtu.be/fjGeBYOPmHA
-CNC kitchen's video: https://youtu.be/B0yo-o47688
-Steven's Instagram: https://www.instagram.com/layershift3d/
+- Arc Overhang Initial Video: https://youtu.be/fjGeBYOPmHA
+- CNC kitchen's video: https://youtu.be/B0yo-o47688
+- Steven's Instagram: https://www.instagram.com/layershift3d/
 
 This is what the algorithm looks like: 
 
