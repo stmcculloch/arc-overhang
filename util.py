@@ -10,6 +10,46 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 
+#def get_angle(a, b, c): 
+#    v1 = [[b[0], a[0]], [b[1], a[1]]]
+#    v2 = [[b[0], c[0]], [b[1], c[1]]]
+#    #x = [a[0], b[0],[]]
+#    return np.arctan2(np.cross(v1, v2), np.dot(v1, v2))  * 180 / np.pi
+
+def get_angle(p1, p2, p3):
+    x1, y1 = p1
+    x2, y2 = p2
+    x3, y3 = p3
+    deg1 = (360 + np.rad2deg(np.arctan2(x1 - x2, y1 - y2))) % 360
+    deg2 = (360 + np.rad2deg(np.arctan2(x3 - x2, y3 - y2))) % 360
+    return deg2 - deg1 if deg1 <= deg2 else 360 - (deg1 - deg2)    
+
+def sharpest_corner(poly):
+    sharpest_corner = 0
+    coords = list(poly.exterior.coords)
+    prev_point = coords[-1]
+    next_point = coords[1]
+    max_i = len(coords)-1
+    for i, point in enumerate(coords):
+        angle = (get_angle(prev_point, point, next_point))
+        if point == prev_point or point == next_point:
+            prev_point = point
+            if i+2 > max_i:
+                next_point = coords[i+2-max_i]
+            else: 
+                next_point = coords[i+2]
+            continue
+        if angle > sharpest_corner:
+            sharpest_corner = angle
+            sharpest_point = prev_point
+        prev_point = point
+        if i+2 > max_i:
+            next_point = coords[i+2-max_i]
+        else: 
+            next_point = coords[i+2]
+    return Point(sharpest_point)
+    
+
 def longest_edge(poly):
     """
     Finds the longest edge in a polygon
@@ -28,39 +68,6 @@ def longest_edge(poly):
         Other point of the longest edge    
     """
     poly_coords = list(poly.exterior.coords)
-    max_length = 0
-    prev_p = Point(poly_coords[-1])
-    for p in poly_coords:
-        curr_p = Point(p)
-        length = curr_p.distance(prev_p)
-        if length > max_length:
-            max_length = length
-            start = prev_p
-            end = curr_p
-
-        prev_p = curr_p
-
-    return start, end
-
-def longest_inner_edge(poly):
-    """
-    Finds the longest edge in a polygon
-    
-    Parameters
-    ----------
-    poly: Polygon
-        The polygon that we want to find the longest edge of
-        
-    Returns
-    -------
-    start: Point
-        First point of the longest edge
-    
-    end: Point
-        Other point of the longest edge    
-    """
-    print(poly.interiors[0].coords)
-    poly_coords = list(poly.interiors[0].coords)
     max_length = 0
     prev_p = Point(poly_coords[-1])
     for p in poly_coords:
@@ -170,7 +177,7 @@ def create_circle(x, y, radius, n):
     - with specified radius
     - using n segments
     """
-    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, 2*np.pi, n)])
+    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, (2*np.pi-(2*np.pi)/n), n)])
 
 def create_rect(x, y, length, width, from_center):
     """
@@ -231,7 +238,7 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     # Plot the arcs. Comment the following 2 lines to make the code run faster
     crescent_geoseries = gpd.GeoSeries(crescent)
     crescent_geoseries.plot(ax=ax[0], color='none', edgecolor='black', linewidth=1) # set color='none' for black and white plotting
-    crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
+    #crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
     
     # Remove all the points in the concave section of the crescent shape, turning it into a "D" shape instead
     crescent_exterior = get_exterior(crescent)
@@ -244,14 +251,16 @@ def create_arc(circle, remaining_empty_space, ax, depth):
         
         else: 
             close_loop = False #the arc is not a full circle
-            print("here AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa")
 
 
     # Make sure first point is on one corner "D", and last point is on the other. 
     # This makes sure the arcs start from one end, and go all the away around to the other
     arc = Polygon(arc)
-    start, _ = longest_edge(arc)
+    start = sharpest_corner(arc)
     fixed_arc = get_boundary_line(arc, start)
+
+    #firstpoint_geoseries = gpd.GeoSeries(Point(fixed_arc[0]))
+    #firstpoint_geoseries.plot(ax=ax[0])
                 
     return Polygon(fixed_arc) , close_loop
 
@@ -289,7 +298,7 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
     r = line_width
     if r > r_final:
         print("WARNING: r", r, "should not be bigger than r_final", r_final)
-        
+    retract_state = True
     while r < r_final:
         # Create a circle based on point location, radius, n
         next_circle = create_circle(next_point.x, next_point.y, r, n)
@@ -302,15 +311,14 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
         
         # Write gcode
         # if arc is a full circle, then make every movement a printing move. Otherwise, do a travel move between the tips of the arc    
-        write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, close_loop)
+        retract_state = write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, close_loop, retracted=retract_state, exclusion_poly=remaining_empty_space)
         
         # Create image
-        #filename = image_number(filename_list)   
+        #filename = image_number(filename_lisft)   
         #plt.savefig(filename, dpi=72)
         #filename_list.append(filename + ".png")
         
     remaining_empty_space = remaining_empty_space.difference(next_circle)
-    # save image
     
     next_point, longest_distance, _ = get_farthest_point(curr_arc, boundary, remaining_empty_space)
     branch = 0    
@@ -335,7 +343,7 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
     print("Depth = ", depth, "Arcs this layer", branch)
     return next_arc, remaining_empty_space, filename_list
 
-def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, close_loop):
+def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, close_loop, retracted=False, exclusion_poly=None):
     ## TODO try using circles instead of D shapes for better surface quality
     ## TODO use a dict or something to reduce # parameters
     #line_width = print_settings["line_width"]
@@ -344,6 +352,9 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
     #filament_diameter = print_settings["filament_diameter"]
     #feedrate = print_settings["feedrate"]    
     
+    feedrate_travel = feedrate * 5
+    feedrate_printing = feedrate
+
     with open(file_name, 'a') as gcode_file:
         
         if close_loop == False:
@@ -352,19 +363,47 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
             coord_list = arc.exterior.coords
             
         prev_coordinate = coord_list[0]
+
         for coordinate in coord_list:
             # Calculate extrusion amount
             # Extrusion number = height of cylinder with equal volume to amount of filament required
             distance = Point(coordinate).distance(Point(prev_coordinate))
             volume = line_width * layer_height * distance
-            e_distance = e_multiplier * volume / (3.1415 * (filament_diameter / 2)**2)
-            gcode_file.write(f"G0 "
+            
+
+            if exclusion_poly:
+                if exclusion_poly.buffer(-1e-9).contains(Point(coordinate)) or exclusion_poly.buffer(-1e-9).contains(Point(prev_coordinate)):
+                    e_distance = e_multiplier * volume / (3.1415 * (filament_diameter / 2)**2)
+                    if retracted:
+                        gcode_file.write("G1 E1 F1500\n") # deretract
+                        #gcode_file.write("G91\nG1 Z-1 F1500\nG90\nM83") # Z hop (doesnt really work)
+                        retracted = False
+                        feedrate = feedrate_printing
+                else:
+                    e_distance = 0
+                    if not retracted:                        
+                        gcode_file.write("G1 E-1 F1500\n") # retract
+                        #gcode_file.write("G91\nG1 Z1 F1500\nG90\nM83") # Z hop (doesnt really work)
+                        retracted = True
+                        feedrate = feedrate_travel
+                    
+            else: 
+                e_distance = e_multiplier * volume / (3.1415 * (filament_diameter / 2)**2)
+                if retracted:
+                    gcode_file.write("G1 E1 F1500\n") # deretract
+                    #gcode_file.write("G91\nG1 Z-1 F1500\nG90\nM83") # Z hop (doesnt really work)
+                    retracted = False
+                    feedrate = feedrate_printing
+
+
+            gcode_file.write(f"G1 "
                             f"X{'{0:.3f}'.format(coordinate[0])} "
                             f"Y{'{0:.3f}'.format(coordinate[1])} "
                             f"E{'{0:.3f}'.format(e_distance)} "
                             f"F{feedrate*60}\n")
+                
             prev_coordinate = coordinate
-    return
+    return retracted
 
 def num_to_rgb(val, max_val=10):
     i = (val * 255 / max_val)
@@ -375,7 +414,6 @@ def num_to_rgb(val, max_val=10):
     g /= 256
     b /= 256
     return (r, g, b)
-
 
 def generate_polygon(center: Tuple[float, float], avg_radius: float,
                      irregularity: float, spikiness: float,
@@ -427,7 +465,6 @@ def generate_polygon(center: Tuple[float, float], avg_radius: float,
         angle += angle_steps[i]
 
     return points
-
 
 def random_angle_steps(steps: int, irregularity: float) -> List[float]:
     """Generates the division of a circumference in random angles.

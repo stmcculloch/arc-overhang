@@ -1,8 +1,8 @@
 ;Start gcode
 M140 S60
+M104 S215 ;colder temps help the overhang cool down faster
 M190 S60
-M104 S195 ;colder temps help the overhang cool down faster
-M109 S195
+M109 S215
 G28             
 G1 X100 Y5 Z1.5 F9000 ; Prime line
 M83 ;relative extrusion

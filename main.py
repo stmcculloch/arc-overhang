@@ -12,10 +12,10 @@ import os
 # 3D printing parameters
 LINE_WIDTH = 0.31  # AKA the increase in radius as arcs grow from a central point.
 LAYER_HEIGHT = 0.4  # Thicker seems to be more stable due to physics.
-ARC_E_MULTIPLIER = 1.30  # Amount of overextrusion to do while doing the overhangs. This somewhat compensates for the unconstrained filament
-FEEDRATE = 2  # Speed while printing the overhangs. In mm/s. Slower helps make it look cleaner.
+ARC_E_MULTIPLIER = 1.6  # Amount of overextrusion to do while doing the overhangs. This somewhat compensates for the unconstrained filament
+FEEDRATE = 3  # Speed while printing the overhangs. In mm/s. Slower helps make it look cleaner.
 FILAMENT_DIAMETER = 1.75 
-BRIM_WIDTH = 5  #
+BRIM_WIDTH = 1
 
 print_settings = {
     "layer_height": LAYER_HEIGHT,
@@ -27,14 +27,14 @@ print_settings = {
 }
 
 # Shape generation parameters
-OVERHANG_HEIGHT = 50  # How high the test print is above the build plate
-BASE_HEIGHT = 0.4 # thickness of circular base
+OVERHANG_HEIGHT = 100  # How high the test print is above the build plate
+BASE_HEIGHT = 0.6 # thickness of circular base
 
 # Hard-coded recursion information
 THRESHOLD = LINE_WIDTH / 2  # How much of a 'buffer' the arcs leave around the base polygon. Don't set it negative or bad things happen.
 OUTPUT_FILE_NAME = "output/output.gcode"
 R_MAX = 30  # maximum radius for a circle
-N = 40      # number of points per circle
+N = 30     # number of points per circle
 
 # Create a figure that we can plot stuff onto
 fig, ax = plt.subplots(1, 2)
@@ -83,8 +83,8 @@ with open('input/start.gcode','r') as start_gcode, open(OUTPUT_FILE_NAME,'a') as
 #                                         spikiness=0.2,
 #                                         num_vertices=20))
 
-outer_circle = util.create_circle(117.5, 117.5, 100, 61)
-inner_circle = util.create_circle(117.5, 117.5, 20, 61)
+outer_circle = util.create_circle(117.5, 117.5, 40, N)
+inner_circle = util.create_circle(117.5, 117.5, 20, N)
 
 base_poly = outer_circle.difference(inner_circle)
 
@@ -126,7 +126,7 @@ while curr_z < BASE_HEIGHT:
     starting_tower_r = r_start + BRIM_WIDTH  
     while starting_tower_r > LINE_WIDTH*2:
         first_layer_circle = util.create_circle(117.5, 117.5, starting_tower_r, N)
-        util.write_gcode(OUTPUT_FILE_NAME, first_layer_circle, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*5, close_loop=True)
+        util.write_gcode(OUTPUT_FILE_NAME, first_layer_circle, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*10, close_loop=True)
         starting_tower_r -= LINE_WIDTH*2
     
     curr_z += LAYER_HEIGHT
@@ -139,15 +139,23 @@ with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
     gcode_file.write("M106 S255 ;Turn on fan to max power\n") 
     
 while curr_z < OVERHANG_HEIGHT:
-    util.write_gcode(OUTPUT_FILE_NAME, starting_poly, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 2, FEEDRATE*5, close_loop=True)
+    util.write_gcode(OUTPUT_FILE_NAME, starting_poly.buffer(LINE_WIDTH/2), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, 3, FEEDRATE*10, close_loop=True)
     with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
         gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
     curr_z += LAYER_HEIGHT
 
+with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
+        gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z-2*LAYER_HEIGHT)} F500\n")
 # Create multiple layers
+
+# Limit maximum circle size
+r_final = r_start
+r_final = min(r_final - THRESHOLD, R_MAX)
+
 r = LINE_WIDTH
 curr_arc = starting_arc
-while r < r_start-THRESHOLD:
+retract_state = True
+while r < r_final:
     # Create a circle based on point location, radius, n
     next_circle = Polygon(util.create_circle(starting_point.x, starting_point.y, r, N))
     # Plot arc
@@ -156,14 +164,14 @@ while r < r_start-THRESHOLD:
     r += LINE_WIDTH
     
     # Write gcode to file
-    util.write_gcode(OUTPUT_FILE_NAME, next_arc, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, close_loop)
+    retract_state = util.write_gcode(OUTPUT_FILE_NAME, next_arc, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, close_loop, retracted=retract_state, exclusion_poly=base_poly)
     
     # Create image
     #file_name = util.image_number(image_name_list)   
     #plt.savefig(file_name, dpi=72)
     #image_name_list.append(file_name + ".png")
 
-remaining_empty_space = base_poly.difference(curr_arc)
+remaining_empty_space = base_poly.difference(next_circle)
 next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, base_poly)
 
 while longest_distance > THRESHOLD + LINE_WIDTH:
