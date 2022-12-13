@@ -10,7 +10,7 @@ import imageio
 import os
 
 # 3D printing parameters
-LINE_WIDTH = 0.31  # AKA the increase in radius as arcs grow from a central point.
+LINE_WIDTH = 0.35  # AKA the increase in radius as arcs grow from a central point.
 LAYER_HEIGHT = 0.4  # Thicker seems to be more stable due to physics.
 ARC_E_MULTIPLIER = 1.6  # Amount of overextrusion to do while doing the overhangs. This somewhat compensates for the unconstrained filament
 FEEDRATE = 3  # Speed while printing the overhangs. In mm/s. Slower helps make it look cleaner.
