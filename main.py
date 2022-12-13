@@ -9,100 +9,72 @@ import os
 import util
 import imageio
 import os
-from tkinter import *
 import tk
 import tkinter 
+from tkinter import *
+import tk
 from tkinter import messagebox
+
+
+def proces():
+    global LINE_WIDTH,LAYER_HEIGHT,ARC_E_MULTIPLIER,FEEDRATE,BRIM_WIDTH,OVERHANG_HEIGHT,FILAMENT_DIAMETER,BASE_HEIGHT,R_MAX,N,avg_radius,irregularity,spikiness,num_vertices,x_axis,y_axis 
+   
+    
+    LINE_WIDTH=float(Entry.get(x[0]))
+    LAYER_HEIGHT = float(Entry.get(x[1]))
+    ARC_E_MULTIPLIER = float(Entry.get(x[2]))
+    FEEDRATE = float(Entry.get(x[3]))
+    BRIM_WIDTH = float(Entry.get(x[4]))
+    OVERHANG_HEIGHT = float(Entry.get(x[5]))
+    FILAMENT_DIAMETER = float(Entry.get(x[6]))
+    BASE_HEIGHT = float(Entry.get(x[7]))
+    R_MAX = float(Entry.get(x[8]))
+    N = float(Entry.get(x[9]))
+    avg_radius = float(Entry.get(x[10]))
+    irregularity = float(Entry.get(x[11]))
+    spikiness = float(Entry.get(x[12]))
+    num_vertices = float(Entry.get(x[13]))
+    x_axis = float(Entry.get(x[14]))
+    y_axis = float(Entry.get(x[15]))
+    top.destroy()
 
 
 top = tkinter.Tk()
 top.title("Arc GEN")
-label_list = [
-     ["Arc generator",            0]
-    ,["Line width",               0.4]
-    ,["Layer height",             0.4]
-    ,["Arc extrusion multiplier", 1.2]
-    ,["Feedrate",                 2.5]
-    ,["BrimWidth",                5]
-    ,["Overhang Height",          20]
-    ,["Filament DIA",             1.75]
-    ,["Base Height",              0.5]
-    ,["Max circle radius",        30]
-    ,["Points per circle",        40]
-    ,["Radius of random polygon", 10]
-    ,["Polygon irregularity",     0.5]
-    ,["Polygon spikiness",        0.4]
-    ,["Polygon num vertices",     10]
-    ,["X Axis Size",              117.5]
-    ,["Y Axis Size",              117.5]]
-L = []
-for i, label in enumerate(label_list):
-    L.append("nothing")
-    L[i] = Label(top, text=label_list[i][0],).grid(row=i,column=0)
+L200 = Label(top, text="Arc Generator",).grid(row=0,column=0)
+labels = ['Line Width', 'Layer Height', 'ARC multiplier', 'Feedrate', 'BrimWidth','Overhang Height', 'Filament DIA', 'Base Height', 'Radius of Circle','Number of Points', 'Average Rad', 'irregularity', 'spikiness', 'num vertices','X Axis Size', 'X Axis Size']
+for i, label in enumerate(labels):
+    L = Label(top, text=label).grid(row=i+1, column=0)
 
+x = np.array([None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None], dtype=np.dtype(Entry))
 
-E = []
-for i in range(len(label_list)-1):
-    E.append("nothing")
-    E[i] = Entry(top, bd =5)
-    E[i].grid(row = i+1,column=1)
-    E[i].insert(i, str(label_list[i+1][1]))
+default_values = ['.4', '.4', '1.3', '2', '5', '20', '1.75', '2', '30', '40', '10','.2', '.2', '15', '225', '210']
+for i, value in enumerate(default_values):
+    x[i] = Entry(top, bd=5)
+    x[i].grid(row=i+1, column=1)
+    x[i].insert(1, value)
 
-
-def proces():
-    global LINE_WIDTH
-    i = 0
-    LINE_WIDTH=float(Entry.get(E[i]))
-    i += 1
-    global LAYER_HEIGHT
-    LAYER_HEIGHT = float(Entry.get(E[i]))
-    i += 1
-    global ARC_E_MULTIPLIER
-    ARC_E_MULTIPLIER = float(Entry.get(E[i]))
-    i += 1
-    global FEEDRATE
-    FEEDRATE = float(Entry.get(E[i]))
-    i += 1
-    global BRIM_WIDTH
-    BRIM_WIDTH = float(Entry.get(E[i]))
-    i += 1
-    global OVERHANG_HEIGHT
-    OVERHANG_HEIGHT = float(Entry.get(E[i]))
-    i += 1
-    global FILAMENT_DIAMETER
-    FILAMENT_DIAMETER = float(Entry.get(E[i]))
-    i += 1
-    global BASE_HEIGHT
-    BASE_HEIGHT = float(Entry.get(E[i]))
-    i += 1
-    global R_MAX
-    R_MAX = float(Entry.get(E[i]))
-    i += 1
-    global N
-    N = float(Entry.get(E[i]))
-    i += 1
-    global  avg_radius
-    avg_radius = float(Entry.get(E[i]))
-    i += 1
-    global irregularity
-    irregularity = float(Entry.get(E[i]))
-    i += 1
-    global spikiness
-    spikiness = float(Entry.get(E[i]))
-    i += 1
-    global num_vertices
-    num_vertices = float(Entry.get(E[i]))
-    i += 1
-    global x_axis
-    x_axis = float(Entry.get(E[i]))
-    i += 1
-    global y_axis
-    y_axis = float(Entry.get(E[i]))
-    top.destroy()
+  
 
 B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
 
 top.mainloop()
+
+
+print_settings = {
+    "layer_height": LAYER_HEIGHT,
+    "line_width": LINE_WIDTH,
+    "e_multiplier": ARC_E_MULTIPLIER,
+    "feedrate": FEEDRATE,
+    "filament_diam": FILAMENT_DIAMETER,
+    "brim_width": BRIM_WIDTH
+}
+
+# Shape generation parameters
+#OVERHANG_HEIGHT = int(Entry.get(E9))
+  # How high the test print is above the build plate
+#BASE_HEIGHT = int(Entry.get(E10))
+ # thickness of circular base
 
 # Hard-coded recursion information
 THRESHOLD = LINE_WIDTH / 2  # How much of a 'buffer' the arcs leave around the base polygon. Don't set it negative or bad things happen.
