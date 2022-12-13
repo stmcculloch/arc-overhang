@@ -145,6 +145,13 @@ def image_number(list_of_files):
         return "1"
 
 def get_exterior(poly):
+
+    #extract just the first polygon if there's ever a multipolygon or geometry collection
+    for geom in getattr(poly, 'geoms', [poly]):
+        if geom.geom_type == 'Polygon':
+            poly = geom
+            break
+
     return [
         coord
         for geom in getattr(poly, 'geoms', [poly])
@@ -246,8 +253,9 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
         longest_distance = r
         r += line_width
         
-        # Write gcode    
-        write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, False)
+        # Write gcode
+        if r_final > 1:    
+            write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, False)
         
         # Create image
         #filename = image_number(filename_list)   
@@ -260,7 +268,7 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
     next_point, longest_distance, _ = get_farthest_point(curr_arc, boundary, remaining_empty_space)
     branch = 0    
     # Create new arcs on the same base arc until no more points on the base arc are farther than the threshold distance.
-    while (longest_distance > threshold+line_width):
+    while (longest_distance > threshold+2*line_width):
         branch += 1
 
         #Create a new arc on curr_arc
@@ -288,7 +296,9 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
     #e_multiplier = print_settings["e_multiplier"]
     #filament_diameter = print_settings["filament_diameter"]
     #feedrate = print_settings["feedrate"]    
-    
+    feedrate_travel = feedrate * 5
+    feedrate_printing = feedrate
+
     with open(file_name, 'a') as gcode_file:
         
         if close_loop == False:
@@ -303,11 +313,23 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
             distance = Point(coordinate).distance(Point(prev_coordinate))
             volume = line_width * layer_height * distance
             e_distance = e_multiplier * volume / (3.1415 * (filament_diameter / 2)**2)
+
+            if e_distance <= 0.0001:
+                feedrate = feedrate_travel
+                gcode_file.write("G1 E-1 F1500\n") # retract
+            else:
+                feedrate = feedrate_printing
+
             gcode_file.write(f"G0 "
                             f"X{'{0:.3f}'.format(coordinate[0])} "
                             f"Y{'{0:.3f}'.format(coordinate[1])} "
                             f"E{'{0:.3f}'.format(e_distance)} "
                             f"F{feedrate*60}\n")
+
+            if e_distance <= 0.0001:
+                feedrate = feedrate_travel
+                gcode_file.write("G1 E1 F1500\n") # deretract
+
             prev_coordinate = coordinate
     return
 

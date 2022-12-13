@@ -15,115 +15,94 @@ import tkinter
 from tkinter import messagebox
 
 
-def proces():
-    global LINE_WIDTH
-    LINE_WIDTH=float(Entry.get(E1))
-    global LAYER_HEIGHT
-    LAYER_HEIGHT = float(Entry.get(E2))
-    global ARC_E_MULTIPLIER
-    ARC_E_MULTIPLIER = float(Entry.get(E3))
-    global FEEDRATE
-    FEEDRATE = float(Entry.get(E4))
-    global BRIM_WIDTH
-    BRIM_WIDTH = float(Entry.get(E5))
-    global OVERHANG_HEIGHT
-    OVERHANG_HEIGHT = float(Entry.get(E6))
-    global FILAMENT_DIAMETER
-    FILAMENT_DIAMETER = float(Entry.get(E7))
-    global BASE_HEIGHT
-    BASE_HEIGHT = float(Entry.get(E8))
-    global R_MAX
-    R_MAX = float(Entry.get(E9))
-    global N
-    N = float(Entry.get(E10))
-    global  avg_radius
-    avg_radius = float(Entry.get(E11))
-    global irregularity
-    irregularity = float(Entry.get(E12))
-    global spikiness
-    spikiness = float(Entry.get(E13))
-    global num_vertices
-    num_vertices = float(Entry.get(E14))
-    global x_axis
-    x_axis = float(Entry.get(E15))
-    global y_axis
-    y_axis = float(Entry.get(E16))
-    top.destroy()
-
-
 top = tkinter.Tk()
 top.title("Arc GEN")
-L200 = Label(top, text="Arc Generator",).grid(row=0,column=0)
-L1 = Label(top, text="Line Width",).grid(row=1,column=0)
-L2 = Label(top, text="Layer Height",).grid(row=2,column=0)
-L3 = Label(top, text="ARC multiplier",).grid(row=3,column=0)
-L4 = Label(top, text="Feedrate",).grid(row=4,column=0)
-L5 = Label(top, text="BrimWidth",).grid(row=5,column=0)
-L6 = Label(top, text="Overhang Height",).grid(row=6,column=0)
-L7 = Label(top, text="Filament DIA",).grid(row=7,column=0)
-L8 = Label(top, text="Base Height",).grid(row=8,column=0)
-L9 = Label(top, text="Radius of Circle",).grid(row=9,column=0)
-L10 = Label(top, text="Number Of Points",).grid(row=10,column=0)
-L11 = Label(top, text="Average Rad",).grid(row=11,column=0)
-L12 = Label(top, text="irregularity",).grid(row=12,column=0)
-L13 = Label(top, text='spikiness',).grid(row=13,column=0)
-L14 = Label(top, text='num vertices',).grid(row=14,column=0)
-L15 = Label(top,text="X Axis Size",).grid(row=15,column=0)
-L16 = Label(top,text="X Axis Size",).grid(row=16,column=0)
+label_list = [
+     ["Arc generator",            0]
+    ,["Line width",               0.4]
+    ,["Layer height",             0.4]
+    ,["Arc extrusion multiplier", 1.3]
+    ,["Feedrate",                 5]
+    ,["BrimWidth",                5]
+    ,["Overhang Height",          20]
+    ,["Filament DIA",             1.75]
+    ,["Base Height",              0.5]
+    ,["Max circle radius",        30]
+    ,["Points per circle",        40]
+    ,["Radius of random polygon", 20]
+    ,["Polygon irregularity",     0.5]
+    ,["Polygon spikiness",        0.2]
+    ,["Polygon num vertices",     10]
+    ,["X Axis Size",              117.5]
+    ,["Y Axis Size",              117.5]]
+L = []
+for i, label in enumerate(label_list):
+    L.append("nothing")
+    L[i] = Label(top, text=label_list[i][0],).grid(row=i,column=0)
 
 
+E = []
+for i in range(len(label_list)-1):
+    E.append("nothing")
+    E[i] = Entry(top, bd =5)
+    E[i].grid(row = i+1,column=1)
+    E[i].insert(i, str(label_list[i+1][1]))
 
-E1 = Entry(top, bd =5)
-E1.grid(row=1,column=1)
-E2 = Entry(top, bd =5)
-E2.grid(row=2,column=1)
-E3 = Entry(top, bd =5)
-E3.grid(row=3,column=1)
-E4 = Entry(top, bd =5)
-E4.grid(row=4,column=1)
-E5 = Entry(top, bd=5)
-E5.grid(row=5,column=1)
-E6 = Entry(top, bd =5)
-E6.grid(row=6,column=1)
-E7 = Entry(top, bd =5)
-E7.grid(row=7,column=1)
-E8 = Entry(top, bd =5)
-E8.grid(row=8,column=1)
-E9 = Entry(top, bd =5)
-E9.grid(row=9,column=1)
-E10 = Entry(top, bd=5)
-E10.grid(row=10,column=1)
-E11 = Entry(top, bd=5)
-E11.grid(row=11, column=1)
-E12 = Entry(top, bd=5)
-E12.grid(row=12, column=1)
-E13 = Entry(top, bd=5)
-E13.grid(row=13, column=1)
-E14 = Entry(top, bd=5)
-E14.grid(row=14, column=1)
-E15 = Entry(top, bd=5)
-E15.grid(row=15, column=1)
-E16 = Entry(top, bd=5)
-E16.grid(row=16, column=1)
 
-E1.insert(1,'.4')
-E2.insert(1,'.4')
-E3.insert(3,'1.3')
-E4.insert(4,'2')
-E5.insert(5,'5')
-E6.insert(6,'20')
-E7.insert(7,'1.75')
-E8.insert(8,'2')
-E9.insert(9,'30')
-E10.insert(10,'40')
-E11.insert(11,'10')
-E12.insert(12,'.2')
-E13.insert(13,'.2')
-E14.insert(14,'15')
-E15.insert(15,'117.5')
-E16.insert(16,'117.5')
+def proces():
+    global LINE_WIDTH
+    i = 0
+    LINE_WIDTH=float(Entry.get(E[i]))
+    i += 1
+    global LAYER_HEIGHT
+    LAYER_HEIGHT = float(Entry.get(E[i]))
+    i += 1
+    global ARC_E_MULTIPLIER
+    ARC_E_MULTIPLIER = float(Entry.get(E[i]))
+    i += 1
+    global FEEDRATE
+    FEEDRATE = float(Entry.get(E[i]))
+    i += 1
+    global BRIM_WIDTH
+    BRIM_WIDTH = float(Entry.get(E[i]))
+    i += 1
+    global OVERHANG_HEIGHT
+    OVERHANG_HEIGHT = float(Entry.get(E[i]))
+    i += 1
+    global FILAMENT_DIAMETER
+    FILAMENT_DIAMETER = float(Entry.get(E[i]))
+    i += 1
+    global BASE_HEIGHT
+    BASE_HEIGHT = float(Entry.get(E[i]))
+    i += 1
+    global R_MAX
+    R_MAX = float(Entry.get(E[i]))
+    i += 1
+    global N
+    N = float(Entry.get(E[i]))
+    i += 1
+    global  avg_radius
+    avg_radius = float(Entry.get(E[i]))
+    i += 1
+    global irregularity
+    irregularity = float(Entry.get(E[i]))
+    i += 1
+    global spikiness
+    spikiness = float(Entry.get(E[i]))
+    i += 1
+    global num_vertices
+    num_vertices = float(Entry.get(E[i]))
+    i += 1
+    global x_axis
+    x_axis = float(Entry.get(E[i]))
+    i += 1
+    global y_axis
+    y_axis = float(Entry.get(E[i]))
+    top.destroy()
 
 B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
+
+
 
 
 top.mainloop()
@@ -265,6 +244,11 @@ while curr_z < OVERHANG_HEIGHT:
         gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
     curr_z += LAYER_HEIGHT
 
+curr_z -= LAYER_HEIGHT*2
+
+with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
+        gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
+
 # Create multiple layers
 r = LINE_WIDTH
 curr_arc = starting_arc
@@ -287,7 +271,7 @@ while r < r_start-THRESHOLD:
 remaining_empty_space = base_poly.difference(curr_arc)
 next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, base_poly)
 
-while longest_distance > THRESHOLD + LINE_WIDTH:
+while longest_distance > THRESHOLD + 2*LINE_WIDTH:
     next_arc, remaining_empty_space, image_name_list = util.arc_overhang(curr_arc, boundary_line, N, 
                                                                         remaining_empty_space, next_circle, 
                                                                         THRESHOLD, ax, fig, 1, image_name_list, 
