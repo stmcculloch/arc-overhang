@@ -260,5 +260,4 @@ with open('input/end.gcode','r') as end_gcode, open(OUTPUT_FILE_NAME,'a') as gco
 
 # Create image
 plt.savefig("output/output", dpi=600)
-        
 plt.show()
