@@ -106,8 +106,8 @@ E11.insert(11,'10')
 E12.insert(12,'.2')
 E13.insert(13,'.2')
 E14.insert(14,'15')
-E15.insert(15,'117.5')
-E16.insert(16,'117.5')
+E15.insert(15,'225')
+E16.insert(16,'210')
 
 B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
 
