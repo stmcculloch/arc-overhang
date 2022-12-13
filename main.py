@@ -16,37 +16,23 @@ from tkinter import messagebox
 
 
 def proces():
-    global LINE_WIDTH
+    global LINE_WIDTH,LAYER_HEIGHT,ARC_E_MULTIPLIER,FEEDRATE,BRIM_WIDTH,OVERHANG_HEIGHT,FILAMENT_DIAMETER,BASE_HEIGHT,R_MAX,N,avg_radius,irregularity,spikiness,num_vertices,x_axis,y_axis 
+   
     LINE_WIDTH=float(Entry.get(E1))
-    global LAYER_HEIGHT
     LAYER_HEIGHT = float(Entry.get(E2))
-    global ARC_E_MULTIPLIER
     ARC_E_MULTIPLIER = float(Entry.get(E3))
-    global FEEDRATE
     FEEDRATE = float(Entry.get(E4))
-    global BRIM_WIDTH
     BRIM_WIDTH = float(Entry.get(E5))
-    global OVERHANG_HEIGHT
     OVERHANG_HEIGHT = float(Entry.get(E6))
-    global FILAMENT_DIAMETER
     FILAMENT_DIAMETER = float(Entry.get(E7))
-    global BASE_HEIGHT
     BASE_HEIGHT = float(Entry.get(E8))
-    global R_MAX
     R_MAX = float(Entry.get(E9))
-    global N
     N = float(Entry.get(E10))
-    global  avg_radius
     avg_radius = float(Entry.get(E11))
-    global irregularity
     irregularity = float(Entry.get(E12))
-    global spikiness
     spikiness = float(Entry.get(E13))
-    global num_vertices
     num_vertices = float(Entry.get(E14))
-    global x_axis
     x_axis = float(Entry.get(E15))
-    global y_axis
     y_axis = float(Entry.get(E16))
     top.destroy()
 
@@ -127,19 +113,7 @@ B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
 
 
 top.mainloop()
-# 3D printing parameters
-#LINE_WIDTH=int(Entry.get(E2))
 
-  # AKA the increase in radius as arcs grow from a central point.
-#LAYER_HEIGHT = int(Entry.get(E4))
-  # Thicker seems to be more stable due to physics.
-#ARC_E_MULTIPLIER = int(Entry.get(E5))
-  # Amount of overextrusion to do while doing the overhangs. This somewhat compensates for the unconstrained filament
-#FEEDRATE = int(Entry.get(E6))
-  # Speed while printing the overhangs. In mm/s. Slower helps make it look cleaner.
-#FILAMENT_DIAMETER = int(Entry.get(E7))
- 
-#BRIM_WIDTH = int(Entry.get(E8))
 
 print_settings = {
     "layer_height": LAYER_HEIGHT,
