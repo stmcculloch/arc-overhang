@@ -5,6 +5,7 @@ import os
 from typing import List, Tuple
 import shapely
 from shapely.geometry import Point, Polygon, LineString, GeometryCollection
+from shapely import affinity
 from shapely.ops import split, nearest_points
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -120,7 +121,7 @@ def create_circle(x, y, radius, n):
     - with specified radius
     - using n segments
     """
-    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, 2*np.pi, int(n))])
+    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, 2*np.pi- 2*np.pi/n, int(n))])
 
 def create_rect(x, y, length, width, from_center):
     """
@@ -185,14 +186,14 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     # Turn "moon" shaped arcs into D shapes
     crescent = circle.intersection(remaining_empty_space)
     
+    # Remove all the points in the concave section of the crescent shape, turning it into a "D" shape instead
+    crescent_exterior = get_exterior(crescent)
+
     # Plot the arcs. Comment the following 2 lines to make the code run faster
-    # Set color to 
-    crescent_geoseries = gpd.GeoSeries(crescent)
+    crescent_geoseries = gpd.GeoSeries(Polygon(crescent_exterior))
     crescent_geoseries.plot(ax=ax[0], color='none', edgecolor='black', linewidth=1) # set color='none' for black and white plotting
     crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
     
-    # Remove all the points in the concave section of the crescent shape, turning it into a "D" shape instead
-    crescent_exterior = get_exterior(crescent)
     empty_exterior = get_exterior(remaining_empty_space)
     arc = [
         coord
@@ -200,15 +201,20 @@ def create_arc(circle, remaining_empty_space, ax, depth):
         if not coord in empty_exterior
     ]
 
+    if len(arc) <= 2:
+        arc = Polygon(crescent_exterior).intersection(remaining_empty_space)
+    else: 
+        arc = Polygon(arc)
+
     # Make sure first point is on one corner "D", and last point is on the other. 
     # This makes sure the arcs start from one end, and go all the away around to the other
-    arc = Polygon(arc)
+ 
     start, _ = longest_edge(arc)
     fixed_arc = get_boundary_line(arc, start)
                 
     return Polygon(fixed_arc) 
 
-def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, depth, 
+def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, threshold, ax, fig, depth, 
                  filename_list, r_max, line_width, gcode_file, layer_height, filament_diameter, e_multiplier, feedrate):
     """ 
     Main recursive function (I'm deeply sorry for the number of arguments here.)
@@ -246,6 +252,8 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
     while r < r_final:
         # Create a circle based on point location, radius, n
         next_circle = create_circle(next_point.x, next_point.y, r, n)
+        
+        next_circle = affinity.rotate(next_circle, starting_line_angle, origin = 'centroid', use_radians=True)
       
         # Plot arc
         next_arc = create_arc(next_circle, remaining_empty_space, ax, depth)
@@ -273,7 +281,7 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
 
         #Create a new arc on curr_arc
         next_arc, remaining_empty_space, filename_list = arc_overhang(
-            curr_arc, boundary, n, remaining_empty_space, next_circle, threshold, ax, fig, depth + 1, 
+            curr_arc, boundary, starting_line_angle, n, remaining_empty_space, next_circle, threshold, ax, fig, depth + 1, 
             filename_list, r_max, line_width, gcode_file, layer_height, filament_diameter, e_multiplier, feedrate)
 
         # Get the farthest distance between curr_arc and the boundary
@@ -298,6 +306,12 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
     #feedrate = print_settings["feedrate"]    
     feedrate_travel = feedrate * 5
     feedrate_printing = feedrate
+
+    #extract just the first polygon if there's ever a multipolygon or geometry collection
+    for geom in getattr(arc, 'geoms', [arc]):
+        if geom.geom_type == 'Polygon':
+            arc = geom
+            break
 
     with open(file_name, 'a') as gcode_file:
         

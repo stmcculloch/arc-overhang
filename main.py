@@ -1,6 +1,7 @@
 from http.client import PROCESSING
 import shapely
 from shapely.geometry import Point, Polygon, LineString, GeometryCollection
+from shapely import affinity
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import moviepy.editor as mp
@@ -19,22 +20,22 @@ top = tkinter.Tk()
 top.title("Arc GEN")
 label_list = [
      ["Arc generator",            0]
-    ,["Line width",               0.4]
+    ,["Line width",               0.3]
     ,["Layer height",             0.4]
-    ,["Arc extrusion multiplier", 1.2]
-    ,["Feedrate",                 2.5]
+    ,["Arc extrusion multiplier", 1.3]
+    ,["Feedrate",                 2]
     ,["BrimWidth",                5]
     ,["Overhang Height",          20]
     ,["Filament DIA",             1.75]
     ,["Base Height",              0.5]
-    ,["Max circle radius",        30]
+    ,["Max circle radius",        10]
     ,["Points per circle",        40]
     ,["Radius of random polygon", 10]
     ,["Polygon irregularity",     0.5]
-    ,["Polygon spikiness",        0.4]
+    ,["Polygon spikiness",        0.25]
     ,["Polygon num vertices",     10]
-    ,["X Axis Size",              117.5]
-    ,["Y Axis Size",              117.5]]
+    ,["X Axis position",          100]
+    ,["Y Axis position",          50]]
 L = []
 for i, label in enumerate(label_list):
     L.append("nothing")
@@ -157,7 +158,9 @@ boundary_line = LineString(util.get_boundary_line(base_poly, p1))
 
 # Create the first arc
 starting_point, r_start, r_farthest = util.get_farthest_point(starting_line, boundary_line, base_poly)
-starting_circle = util.create_circle(starting_point.x, starting_point.y, r_start, N)
+starting_circle_norot = util.create_circle(starting_point.x, starting_point.y, r_start, N)
+starting_line_angle = np.arctan2((p2.y-p1.y),(p2.x-p1.x))
+starting_circle = affinity.rotate(starting_circle_norot, starting_line_angle, origin = 'centroid', use_radians=True)
 starting_arc = starting_circle.intersection(base_poly)
 
 # plot base poly
@@ -172,7 +175,8 @@ starting_line_geoseries.plot(ax=ax[0], color='red', linewidth=2)
 # Generate 3d printed starting tower
 curr_z = LAYER_HEIGHT  # Height of first layer
 with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
-    gcode_file.write(f"G1 Z{curr_z} F500\n")
+    gcode_file.write(f"G0 X{'{0:.3f}'.format(starting_point.x)} Y{'{0:.3f}'.format(starting_point.y)} F500\n")
+    gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
     gcode_file.write(";Generating first layer\n")
     gcode_file.write("G1 E4.25\n")  # Unretract
     
@@ -210,6 +214,7 @@ curr_arc = starting_arc
 while r < r_start-THRESHOLD:
     # Create a circle based on point location, radius, n
     next_circle = Polygon(util.create_circle(starting_point.x, starting_point.y, r, N))
+    next_circle = affinity.rotate(next_circle, starting_line_angle, origin = 'centroid', use_radians=True)
     # Plot arc
     next_arc = util.create_arc(next_circle, base_poly, ax, depth=0)
     curr_arc = Polygon(next_arc)
@@ -227,7 +232,7 @@ remaining_empty_space = base_poly.difference(curr_arc)
 next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, base_poly)
 
 while longest_distance > THRESHOLD + 4*LINE_WIDTH:
-    next_arc, remaining_empty_space, image_name_list = util.arc_overhang(curr_arc, boundary_line, N, 
+    next_arc, remaining_empty_space, image_name_list = util.arc_overhang(curr_arc, boundary_line, starting_line_angle, N, 
                                                                         remaining_empty_space, next_circle, 
                                                                         THRESHOLD, ax, fig, 1, image_name_list, 
                                                                         R_MAX, LINE_WIDTH, OUTPUT_FILE_NAME,
