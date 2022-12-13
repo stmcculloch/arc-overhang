@@ -1,8 +1,14 @@
-G90 ; use absolute coordinates
-M83 ; extruder relative mode
-M104 S180 ; set extruder temp
-M140 S60 ; set bed temp
-M190 S60 ; wait for bed temp
-M109 S180 ; wait for extruder temp
-G28 W ; home all without mesh bed level
-G80 ; mesh bed leveling
+;gcode for ArcOverhang. Created by Steven McCulloch
+;Start gcode
+M140 S60
+M104 S215 ;colder temps help the overhang cool down faster
+M190 S60
+M109 S215
+G28             
+G1 X100 Y5 Z1.5 F9000 ; Prime line
+M83 ;relative extrusion
+G1 X130 E30 F100 ; Draw prime line
+G1 E-4 F1500; Retract 4mm. Adjust this as needed
+M201 X2500 Y2500 Z500 E5000
+M203 X200 Y200 Z50 E100
+M205 X15 Y15 Z15 E15

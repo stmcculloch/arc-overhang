@@ -21,17 +21,17 @@ label_list = [
      ["Arc generator",            0]
     ,["Line width",               0.4]
     ,["Layer height",             0.4]
-    ,["Arc extrusion multiplier", 1.3]
-    ,["Feedrate",                 5]
+    ,["Arc extrusion multiplier", 1.2]
+    ,["Feedrate",                 2.5]
     ,["BrimWidth",                5]
     ,["Overhang Height",          20]
     ,["Filament DIA",             1.75]
     ,["Base Height",              0.5]
     ,["Max circle radius",        30]
     ,["Points per circle",        40]
-    ,["Radius of random polygon", 20]
+    ,["Radius of random polygon", 10]
     ,["Polygon irregularity",     0.5]
-    ,["Polygon spikiness",        0.2]
+    ,["Polygon spikiness",        0.4]
     ,["Polygon num vertices",     10]
     ,["X Axis Size",              117.5]
     ,["Y Axis Size",              117.5]]
@@ -102,46 +102,11 @@ def proces():
 
 B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
 
-
-
-
 top.mainloop()
-# 3D printing parameters
-#LINE_WIDTH=int(Entry.get(E2))
-
-  # AKA the increase in radius as arcs grow from a central point.
-#LAYER_HEIGHT = int(Entry.get(E4))
-  # Thicker seems to be more stable due to physics.
-#ARC_E_MULTIPLIER = int(Entry.get(E5))
-  # Amount of overextrusion to do while doing the overhangs. This somewhat compensates for the unconstrained filament
-#FEEDRATE = int(Entry.get(E6))
-  # Speed while printing the overhangs. In mm/s. Slower helps make it look cleaner.
-#FILAMENT_DIAMETER = int(Entry.get(E7))
- 
-#BRIM_WIDTH = int(Entry.get(E8))
-
-print_settings = {
-    "layer_height": LAYER_HEIGHT,
-    "line_width": LINE_WIDTH,
-    "e_multiplier": ARC_E_MULTIPLIER,
-    "feedrate": FEEDRATE,
-    "filament_diam": FILAMENT_DIAMETER,
-    "brim_width": BRIM_WIDTH
-}
-
-# Shape generation parameters
-#OVERHANG_HEIGHT = int(Entry.get(E9))
-  # How high the test print is above the build plate
-#BASE_HEIGHT = int(Entry.get(E10))
- # thickness of circular base
 
 # Hard-coded recursion information
 THRESHOLD = LINE_WIDTH / 2  # How much of a 'buffer' the arcs leave around the base polygon. Don't set it negative or bad things happen.
 OUTPUT_FILE_NAME = "output/output.gcode"
-#R_MAX 
-  # maximum radius for a circle
-#N = () #int(Entry.get(E2))
-     # number of points per circle
 
 # Create a figure that we can plot stuff onto
 fig, ax = plt.subplots(1, 2)
@@ -152,16 +117,6 @@ ax[1].title.set_text('Rainbow Visualization')
 
 # Create a list of image names
 image_name_list = []
-
-recursion_info = {
-    "threshold": THRESHOLD,
-    "gcode_file": OUTPUT_FILE_NAME,
-    "fig": fig,
-    "ax": ax,
-    "image_name_list": image_name_list,
-    "r_max": R_MAX,
-    "n": N
-}
 
 # Delete all previous images
 current_directory = "./"
@@ -271,7 +226,7 @@ while r < r_start-THRESHOLD:
 remaining_empty_space = base_poly.difference(curr_arc)
 next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, base_poly)
 
-while longest_distance > THRESHOLD + 2*LINE_WIDTH:
+while longest_distance > THRESHOLD + 4*LINE_WIDTH:
     next_arc, remaining_empty_space, image_name_list = util.arc_overhang(curr_arc, boundary_line, N, 
                                                                         remaining_empty_space, next_circle, 
                                                                         THRESHOLD, ax, fig, 1, image_name_list, 
@@ -302,5 +257,8 @@ for i in range(10):
 with open('input/end.gcode','r') as end_gcode, open(OUTPUT_FILE_NAME,'a') as gcode_file:
     for line in end_gcode:
         gcode_file.write(line)
+
+# Create image
+plt.savefig("output/output", dpi=600)
         
 plt.show()

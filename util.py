@@ -268,7 +268,7 @@ def arc_overhang(arc, boundary, n, prev_poly, prev_circle, threshold, ax, fig, d
     next_point, longest_distance, _ = get_farthest_point(curr_arc, boundary, remaining_empty_space)
     branch = 0    
     # Create new arcs on the same base arc until no more points on the base arc are farther than the threshold distance.
-    while (longest_distance > threshold+2*line_width):
+    while (longest_distance > threshold+4*line_width):
         branch += 1
 
         #Create a new arc on curr_arc
