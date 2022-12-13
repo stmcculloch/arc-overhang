@@ -9,105 +9,52 @@ import os
 import util
 import imageio
 import os
-from tkinter import *
 import tk
 import tkinter 
+from tkinter import *
+import tk
 from tkinter import messagebox
 
 
 def proces():
     global LINE_WIDTH,LAYER_HEIGHT,ARC_E_MULTIPLIER,FEEDRATE,BRIM_WIDTH,OVERHANG_HEIGHT,FILAMENT_DIAMETER,BASE_HEIGHT,R_MAX,N,avg_radius,irregularity,spikiness,num_vertices,x_axis,y_axis 
    
-    LINE_WIDTH=float(Entry.get(E1))
-    LAYER_HEIGHT = float(Entry.get(E2))
-    ARC_E_MULTIPLIER = float(Entry.get(E3))
-    FEEDRATE = float(Entry.get(E4))
-    BRIM_WIDTH = float(Entry.get(E5))
-    OVERHANG_HEIGHT = float(Entry.get(E6))
-    FILAMENT_DIAMETER = float(Entry.get(E7))
-    BASE_HEIGHT = float(Entry.get(E8))
-    R_MAX = float(Entry.get(E9))
-    N = float(Entry.get(E10))
-    avg_radius = float(Entry.get(E11))
-    irregularity = float(Entry.get(E12))
-    spikiness = float(Entry.get(E13))
-    num_vertices = float(Entry.get(E14))
-    x_axis = float(Entry.get(E15))
-    y_axis = float(Entry.get(E16))
+    
+    LINE_WIDTH=float(Entry.get(x[0]))
+    LAYER_HEIGHT = float(Entry.get(x[1]))
+    ARC_E_MULTIPLIER = float(Entry.get(x[2]))
+    FEEDRATE = float(Entry.get(x[3]))
+    BRIM_WIDTH = float(Entry.get(x[4]))
+    OVERHANG_HEIGHT = float(Entry.get(x[5]))
+    FILAMENT_DIAMETER = float(Entry.get(x[6]))
+    BASE_HEIGHT = float(Entry.get(x[7]))
+    R_MAX = float(Entry.get(x[8]))
+    N = float(Entry.get(x[9]))
+    avg_radius = float(Entry.get(x[10]))
+    irregularity = float(Entry.get(x[11]))
+    spikiness = float(Entry.get(x[12]))
+    num_vertices = float(Entry.get(x[13]))
+    x_axis = float(Entry.get(x[14]))
+    y_axis = float(Entry.get(x[15]))
     top.destroy()
 
 
 top = tkinter.Tk()
 top.title("Arc GEN")
 L200 = Label(top, text="Arc Generator",).grid(row=0,column=0)
-L1 = Label(top, text="Line Width",).grid(row=1,column=0)
-L2 = Label(top, text="Layer Height",).grid(row=2,column=0)
-L3 = Label(top, text="ARC multiplier",).grid(row=3,column=0)
-L4 = Label(top, text="Feedrate",).grid(row=4,column=0)
-L5 = Label(top, text="BrimWidth",).grid(row=5,column=0)
-L6 = Label(top, text="Overhang Height",).grid(row=6,column=0)
-L7 = Label(top, text="Filament DIA",).grid(row=7,column=0)
-L8 = Label(top, text="Base Height",).grid(row=8,column=0)
-L9 = Label(top, text="Radius of Circle",).grid(row=9,column=0)
-L10 = Label(top, text="Number Of Points",).grid(row=10,column=0)
-L11 = Label(top, text="Average Rad",).grid(row=11,column=0)
-L12 = Label(top, text="irregularity",).grid(row=12,column=0)
-L13 = Label(top, text='spikiness',).grid(row=13,column=0)
-L14 = Label(top, text='num vertices',).grid(row=14,column=0)
-L15 = Label(top,text="X Axis Size",).grid(row=15,column=0)
-L16 = Label(top,text="X Axis Size",).grid(row=16,column=0)
+labels = ['Line Width', 'Layer Height', 'ARC multiplier', 'Feedrate', 'BrimWidth','Overhang Height', 'Filament DIA', 'Base Height', 'Radius of Circle','Number of Points', 'Average Rad', 'irregularity', 'spikiness', 'num vertices','X Axis Size', 'X Axis Size']
+for i, label in enumerate(labels):
+    L = Label(top, text=label).grid(row=i+1, column=0)
 
+x = np.array([None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None], dtype=np.dtype(Entry))
 
+default_values = ['.4', '.4', '1.3', '2', '5', '20', '1.75', '2', '30', '40', '10','.2', '.2', '15', '225', '210']
+for i, value in enumerate(default_values):
+    x[i] = Entry(top, bd=5)
+    x[i].grid(row=i+1, column=1)
+    x[i].insert(1, value)
 
-E1 = Entry(top, bd =5)
-E1.grid(row=1,column=1)
-E2 = Entry(top, bd =5)
-E2.grid(row=2,column=1)
-E3 = Entry(top, bd =5)
-E3.grid(row=3,column=1)
-E4 = Entry(top, bd =5)
-E4.grid(row=4,column=1)
-E5 = Entry(top, bd=5)
-E5.grid(row=5,column=1)
-E6 = Entry(top, bd =5)
-E6.grid(row=6,column=1)
-E7 = Entry(top, bd =5)
-E7.grid(row=7,column=1)
-E8 = Entry(top, bd =5)
-E8.grid(row=8,column=1)
-E9 = Entry(top, bd =5)
-E9.grid(row=9,column=1)
-E10 = Entry(top, bd=5)
-E10.grid(row=10,column=1)
-E11 = Entry(top, bd=5)
-E11.grid(row=11, column=1)
-E12 = Entry(top, bd=5)
-E12.grid(row=12, column=1)
-E13 = Entry(top, bd=5)
-E13.grid(row=13, column=1)
-E14 = Entry(top, bd=5)
-E14.grid(row=14, column=1)
-E15 = Entry(top, bd=5)
-E15.grid(row=15, column=1)
-E16 = Entry(top, bd=5)
-E16.grid(row=16, column=1)
-
-E1.insert(1,'.4')
-E2.insert(1,'.4')
-E3.insert(3,'1.3')
-E4.insert(4,'2')
-E5.insert(5,'5')
-E6.insert(6,'20')
-E7.insert(7,'1.75')
-E8.insert(8,'2')
-E9.insert(9,'30')
-E10.insert(10,'40')
-E11.insert(11,'10')
-E12.insert(12,'.2')
-E13.insert(13,'.2')
-E14.insert(14,'15')
-E15.insert(15,'225')
-E16.insert(16,'210')
+  
 
 B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
 
