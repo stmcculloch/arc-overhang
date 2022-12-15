@@ -1,4 +1,3 @@
-;gcode for ArcOverhang. Created by Steven McCulloch
 ;Start gcode
 M140 S60
 M104 S205 ;colder temps help the overhang cool down faster

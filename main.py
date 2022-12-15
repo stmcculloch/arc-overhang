@@ -20,9 +20,9 @@ top = tkinter.Tk()
 top.title("Arc GEN")
 label_list = [
      ["Arc generator",            0]
-    ,["Line width",               0.3]
+    ,["Line width",               0.35]
     ,["Layer height",             0.4]
-    ,["Arc extrusion multiplier", 1.3]
+    ,["Arc extrusion multiplier", 1]
     ,["Feedrate",                 2]
     ,["BrimWidth",                5]
     ,["Overhang Height",          20]
@@ -32,8 +32,8 @@ label_list = [
     ,["Points per circle",        40]
     ,["Radius of random polygon", 10]
     ,["Polygon irregularity",     0.5]
-    ,["Polygon spikiness",        0.25]
-    ,["Polygon num vertices",     10]
+    ,["Polygon spikiness",        0.3]
+    ,["Polygon num vertices",     15]
     ,["X Axis position",          100]
     ,["Y Axis position",          50]]
 L = []
@@ -178,7 +178,7 @@ with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
     gcode_file.write(f"G0 X{'{0:.3f}'.format(starting_point.x)} Y{'{0:.3f}'.format(starting_point.y)} F500\n")
     gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
     gcode_file.write(";Generating first layer\n")
-    gcode_file.write("G1 E4.25\n")  # Unretract
+    gcode_file.write("G1 E3.8\n")  # Unretract
     
 # Fill in circles from outside to inside
 while curr_z < BASE_HEIGHT:
@@ -210,19 +210,32 @@ with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
 
 # Create multiple layers
 r = LINE_WIDTH
+small_arc_radius = 1.4
 curr_arc = starting_arc
+starting_point = util.move_toward_point(starting_point, affinity.rotate(p1, 90, LineString([p1, p2]).centroid), LINE_WIDTH*1.5)
 while r < r_start-THRESHOLD:
     # Create a circle based on point location, radius, n
     next_circle = Polygon(util.create_circle(starting_point.x, starting_point.y, r, N))
     next_circle = affinity.rotate(next_circle, starting_line_angle, origin = 'centroid', use_radians=True)
     # Plot arc
     next_arc = util.create_arc(next_circle, base_poly, ax, depth=0)
+    if not next_arc:
+        r += LINE_WIDTH
+        continue
     curr_arc = Polygon(next_arc)
-    r += LINE_WIDTH
-    
+
+    #Slow down for all small arcs
+    if r < small_arc_radius:
+        speed_modifier = 0.25
+        e_modifier = 0.25
+    else: 
+        speed_modifier = 1
+        e_modifier = 1
+
     # Write gcode to file
-    util.write_gcode(OUTPUT_FILE_NAME, next_arc, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, close_loop=False)
+    util.write_gcode(OUTPUT_FILE_NAME, next_arc, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER*e_modifier, FEEDRATE*speed_modifier, close_loop=False)
     
+    r += LINE_WIDTH
     # Create image
     #file_name = util.image_number(image_name_list)   
     #plt.savefig(file_name, dpi=72)
@@ -231,7 +244,7 @@ while r < r_start-THRESHOLD:
 remaining_empty_space = base_poly.difference(curr_arc)
 next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, base_poly)
 
-while longest_distance > THRESHOLD + 4*LINE_WIDTH:
+while longest_distance > THRESHOLD + 3*LINE_WIDTH:
     next_arc, remaining_empty_space, image_name_list = util.arc_overhang(curr_arc, boundary_line, starting_line_angle, N, 
                                                                         remaining_empty_space, next_circle, 
                                                                         THRESHOLD, ax, fig, 1, image_name_list, 
@@ -239,6 +252,21 @@ while longest_distance > THRESHOLD + 4*LINE_WIDTH:
                                                                         LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER,
                                                                         FEEDRATE)
     next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, remaining_empty_space)
+
+for i in range(5):
+
+    first_ring = LineString(base_poly.buffer(-4*LINE_WIDTH + LINE_WIDTH*i).exterior.coords)
+    first_ring = first_ring.intersection(remaining_empty_space)
+    #print(first_ring)
+    if first_ring.length <1e-9:
+        continue
+    for line in first_ring.geoms:
+        print(line)
+        # plot starting line
+        first_ring_geoseries = gpd.GeoSeries(line)
+        first_ring_geoseries.plot(ax=ax[0], color='blue', edgecolor = 'blue', linewidth=1)
+        util.write_gcode(OUTPUT_FILE_NAME, line, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, False)
+
 """
 # Turn images into gif + MP4
 print("Making gif")
@@ -254,7 +282,7 @@ clip.write_videofile("output/output_video.mp4")
 # Build a few layers on top of the overhanging area
 
 for i in range(10):
-    util.write_gcode(OUTPUT_FILE_NAME, Polygon(boundary_line).buffer(-THRESHOLD/2), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE*10, close_loop=True)
+    util.write_gcode(OUTPUT_FILE_NAME, Polygon(boundary_line), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE*10, close_loop=True)
     with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
         gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z+LAYER_HEIGHT*i)} F500\n")
         

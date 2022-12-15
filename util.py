@@ -98,6 +98,21 @@ def get_farthest_point(arc, base_poly, remaining_empty_space):
     point_on_poly = nearest_points(base_poly, farthest_point)[0]
     return farthest_point, longest_distance, point_on_poly
 
+def move_toward_point(start_point, target_point, distance):
+    """Moves a point a set distance toward another point"""
+
+    # Calculate the direction in which to move
+    dx = target_point.x - start_point.x
+    dy = target_point.y - start_point.y
+
+    # Normalize the direction
+    magnitude = (dx**2 + dy**2)**0.5
+    dx /= magnitude
+    dy /= magnitude
+
+    # Move the point in the direction of the target by the set distance
+    return Point(start_point.x + dx*distance, start_point.y + dy*distance)
+
 def get_boundary_line(poly, p1):
     """
     Find the geometry that the arcs will build out to approach.
@@ -121,7 +136,7 @@ def create_circle(x, y, radius, n):
     - with specified radius
     - using n segments
     """
-    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, 2*np.pi- 2*np.pi/n, int(n))])
+    return Polygon([[radius*np.sin(theta)+x, radius*np.cos(theta)+y] for theta in np.linspace(0, 2*np.pi - 2*np.pi/n, int(n))])
 
 def create_rect(x, y, length, width, from_center):
     """
@@ -195,20 +210,25 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
     
     empty_exterior = get_exterior(remaining_empty_space)
-    arc = [
-        coord
-        for coord in crescent_exterior
-        if not coord in empty_exterior
-    ]
 
-    if len(arc) <= 2:
+    arc = []
+    for coord in crescent_exterior:
+        if (not coord in empty_exterior) and (not coord in arc):
+            arc.append(coord)
+
+    if len(arc) == 0:
+        print("CIRCLE COMPLETELY ENGULFED")
+        return None
+
+    elif len(arc) <= 2:
         arc = Polygon(crescent_exterior).intersection(remaining_empty_space)
+
     else: 
         arc = Polygon(arc)
 
     # Make sure first point is on one corner "D", and last point is on the other. 
     # This makes sure the arcs start from one end, and go all the away around to the other
- 
+
     start, _ = longest_edge(arc)
     fixed_arc = get_boundary_line(arc, start)
                 
@@ -237,9 +257,14 @@ def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, 
     """
     # Find the next center point of arc, the radius of the new arc, and the closest point on the boundary to the center point.
     next_point, r_final, _ = get_farthest_point(arc, boundary, prev_poly)
-    
     # Limit maximum circle size
     r_final = min(r_final - threshold, r_max)
+
+    small_arc_radius = 1
+    circle_moved = False
+    if r_final > small_arc_radius:
+        next_point = move_toward_point(next_point, prev_circle.centroid, line_width*1.5)
+        circle_moved = True
     
     # Update the current boundary polygon to include the previous circle
     remaining_empty_space = prev_poly.difference(prev_circle)    
@@ -252,19 +277,32 @@ def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, 
     while r < r_final:
         # Create a circle based on point location, radius, n
         next_circle = create_circle(next_point.x, next_point.y, r, n)
-        
         next_circle = affinity.rotate(next_circle, starting_line_angle, origin = 'centroid', use_radians=True)
       
         # Plot arc
         next_arc = create_arc(next_circle, remaining_empty_space, ax, depth)
+        if not next_arc:
+            r += line_width
+            continue
         curr_arc = Polygon(next_arc)
         longest_distance = r
-        r += line_width
         
+        #Slow down for all small arcs
+        if circle_moved and r < small_arc_radius:
+            speed_modifier = 0.25
+            e_modifier = 0.25
+        elif r <= line_width:
+            speed_modifier = 0.25
+            e_modifier = 0.1
+        else: 
+            speed_modifier = 1
+            e_modifier = 1
+
         # Write gcode
-        if r_final > 1:    
-            write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier, feedrate, False)
+        if r_final > 0:    
+            write_gcode(gcode_file, next_arc, line_width, layer_height, filament_diameter, e_multiplier*e_modifier, feedrate*speed_modifier, False)
         
+        r += line_width
         # Create image
         #filename = image_number(filename_list)   
         #plt.savefig(filename, dpi=72)
@@ -276,7 +314,7 @@ def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, 
     next_point, longest_distance, _ = get_farthest_point(curr_arc, boundary, remaining_empty_space)
     branch = 0    
     # Create new arcs on the same base arc until no more points on the base arc are farther than the threshold distance.
-    while (longest_distance > threshold+4*line_width):
+    while (longest_distance > threshold+3*line_width):
         branch += 1
 
         #Create a new arc on curr_arc
@@ -304,7 +342,7 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
     #e_multiplier = print_settings["e_multiplier"]
     #filament_diameter = print_settings["filament_diameter"]
     #feedrate = print_settings["feedrate"]    
-    feedrate_travel = feedrate * 5
+    feedrate_travel = feedrate * 20
     feedrate_printing = feedrate
 
     #extract just the first polygon if there's ever a multipolygon or geometry collection
@@ -315,13 +353,23 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
 
     with open(file_name, 'a') as gcode_file:
         
-        if close_loop == False:
-            coord_list = arc.exterior.coords[:-1]
-        else:
-            coord_list = arc.exterior.coords
-            
+        for geom in getattr(arc, 'geoms', [arc]):
+            if geom.geom_type == 'LineString':
+                coord_list = arc.coords
+
+            elif geom.geom_type == 'Polygon':
+                if close_loop == False:
+                    coord_list = arc.exterior.coords[:-1]
+                else:
+                    coord_list = arc.exterior.coords
+
+        first_coord = True    
         prev_coordinate = coord_list[0]
         for coordinate in coord_list:
+            if not first_coord and coordinate == prev_coordinate:
+                continue
+            else: 
+                first_coord = False
             # Calculate extrusion amount
             # Extrusion number = height of cylinder with equal volume to amount of filament required
             distance = Point(coordinate).distance(Point(prev_coordinate))
@@ -337,10 +385,10 @@ def write_gcode(file_name, arc, line_width, layer_height, filament_diameter, e_m
             gcode_file.write(f"G0 "
                             f"X{'{0:.3f}'.format(coordinate[0])} "
                             f"Y{'{0:.3f}'.format(coordinate[1])} "
-                            f"E{'{0:.3f}'.format(e_distance)} "
+                            f"E{'{0:.8f}'.format(e_distance)} "
                             f"F{feedrate*60}\n")
 
-            if e_distance <= 0.0001:
+            if e_distance <= 0.000001:
                 feedrate = feedrate_travel
                 gcode_file.write("G1 E1 F1500\n") # deretract
 
@@ -356,7 +404,6 @@ def num_to_rgb(val, max_val=10):
     g /= 256
     b /= 256
     return (r, g, b)
-
 
 def generate_polygon(center: Tuple[float, float], avg_radius: float,
                      irregularity: float, spikiness: float,
@@ -409,7 +456,6 @@ def generate_polygon(center: Tuple[float, float], avg_radius: float,
 
     return points
 
-
 def random_angle_steps(steps: int, irregularity: float) -> List[float]:
     """Generates the division of a circumference in random angles.
 
@@ -436,7 +482,6 @@ def random_angle_steps(steps: int, irregularity: float) -> List[float]:
     for i in range(int(steps)):
         angles[i] /= cumsum
     return angles
-
 
 def clip(value, lower, upper):
     """
