@@ -22,13 +22,14 @@ label_list = [
      ["Arc generator",            0]
     ,["Line width",               0.35]
     ,["Layer height",             0.4]
-    ,["Arc extrusion multiplier", 1]
+    ,["Arc extrusion multiplier", 1.05]
     ,["Feedrate",                 2]
     ,["BrimWidth",                5]
     ,["Overhang Height",          20]
     ,["Filament DIA",             1.75]
     ,["Base Height",              0.5]
     ,["Max circle radius",        10]
+    ,["Min circle radius",        2]
     ,["Points per circle",        40]
     ,["Radius of random polygon", 10]
     ,["Polygon irregularity",     0.5]
@@ -48,7 +49,6 @@ for i in range(len(label_list)-1):
     E[i] = Entry(top, bd =5)
     E[i].grid(row = i+1,column=1)
     E[i].insert(i, str(label_list[i+1][1]))
-
 
 def proces():
     global LINE_WIDTH
@@ -79,6 +79,9 @@ def proces():
     global R_MAX
     R_MAX = float(Entry.get(E[i]))
     i += 1
+    global R_MIN
+    R_MIN = float(Entry.get(E[i]))
+    i += 1
     global N
     N = float(Entry.get(E[i]))
     i += 1
@@ -101,12 +104,12 @@ def proces():
     y_axis = float(Entry.get(E[i]))
     top.destroy()
 
-B=Button(top, text ="Generate",command= proces).grid(row=18,column=1)
-
+B=Button(top, text ="Generate",command= proces).grid(row=19,column=1)
 top.mainloop()
 
 # Hard-coded recursion information
-THRESHOLD = LINE_WIDTH / 2  # How much of a 'buffer' the arcs leave around the base polygon. Don't set it negative or bad things happen.
+THRESHOLD = R_MIN  #5 # How much of a 'buffer' the arcs leave around the base polygon. Don't set it negative or bad things happen.
+MIN_ARCS = np.floor(R_MIN/LINE_WIDTH)
 OUTPUT_FILE_NAME = "output/output.gcode"
 
 # Create a figure that we can plot stuff onto
@@ -137,7 +140,7 @@ with open('input/start.gcode','r') as start_gcode, open(OUTPUT_FILE_NAME,'a') as
         gcode_file.write(line)
 
 # Create base polygon. The base polygon is the shape that will be filled by arcs
-# base_poly = create_rect(RECT_X, RECT_Y, RECT_LENGTH, RECT_WIDTH, True)
+#base_poly = util.create_rect(150, 20, 20, 20, True)
 
 # Make the base polygon a randomly generated shape
 base_poly = Polygon(util.generate_polygon(center=(x_axis, y_axis),
@@ -210,13 +213,19 @@ with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
 
 # Create multiple layers
 r = LINE_WIDTH
-small_arc_radius = 1.4
+small_arc_radius = 0.5 # Arcs smaller than this get reduced speed and/or flow settings.
 curr_arc = starting_arc
-starting_point = util.move_toward_point(starting_point, affinity.rotate(p1, 90, LineString([p1, p2]).centroid), LINE_WIDTH*1.5)
+
+# Overlap arc with the starting line
+starting_point = util.move_toward_point(starting_point, affinity.rotate(p1, 90, LineString([p1, p2]).centroid), LINE_WIDTH*0.5) 
+
+# Create arcs until we reach the edge of the polygon
 while r < r_start-THRESHOLD:
+
     # Create a circle based on point location, radius, n
     next_circle = Polygon(util.create_circle(starting_point.x, starting_point.y, r, N))
     next_circle = affinity.rotate(next_circle, starting_line_angle, origin = 'centroid', use_radians=True)
+
     # Plot arc
     next_arc = util.create_arc(next_circle, base_poly, ax, depth=0)
     if not next_arc:
@@ -224,7 +233,7 @@ while r < r_start-THRESHOLD:
         continue
     curr_arc = Polygon(next_arc)
 
-    #Slow down for all small arcs
+    #Slow down and reduce flow for all small arcs
     if r < small_arc_radius:
         speed_modifier = 0.25
         e_modifier = 0.25
@@ -236,41 +245,55 @@ while r < r_start-THRESHOLD:
     util.write_gcode(OUTPUT_FILE_NAME, next_arc, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER*e_modifier, FEEDRATE*speed_modifier, close_loop=False)
     
     r += LINE_WIDTH
+    
     # Create image
     #file_name = util.image_number(image_name_list)   
-    #plt.savefig(file_name, dpi=72)
+    #plt.savefig(file_name, dpi=200)
     #image_name_list.append(file_name + ".png")
 
 remaining_empty_space = base_poly.difference(curr_arc)
 next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, base_poly)
 
-while longest_distance > THRESHOLD + 3*LINE_WIDTH:
+# If there's room for an arc to be built on top of the current arc, then do it!
+while longest_distance > THRESHOLD + MIN_ARCS*LINE_WIDTH: 
     next_arc, remaining_empty_space, image_name_list = util.arc_overhang(curr_arc, boundary_line, starting_line_angle, N, 
                                                                         remaining_empty_space, next_circle, 
                                                                         THRESHOLD, ax, fig, 1, image_name_list, 
-                                                                        R_MAX, LINE_WIDTH, OUTPUT_FILE_NAME,
+                                                                        R_MAX, MIN_ARCS, LINE_WIDTH, OUTPUT_FILE_NAME,
                                                                         LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER,
                                                                         FEEDRATE)
     next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, remaining_empty_space)
 
-for i in range(5):
-
-    first_ring = LineString(base_poly.buffer(-4*LINE_WIDTH + LINE_WIDTH*i).exterior.coords)
+# Add concentric rings around the outside of the perimeter
+# TODO don't use a for loop.....
+for i in range(100):
+    first_ring = LineString(Polygon(boundary_line).buffer(-99*LINE_WIDTH + LINE_WIDTH*i).exterior.coords)
     first_ring = first_ring.intersection(remaining_empty_space)
-    #print(first_ring)
     if first_ring.length <1e-9:
         continue
-    for line in first_ring.geoms:
-        print(line)
+
+    if first_ring.geom_type == 'LineString':
+        line = first_ring
         # plot starting line
         first_ring_geoseries = gpd.GeoSeries(line)
         first_ring_geoseries.plot(ax=ax[0], color='blue', edgecolor = 'blue', linewidth=1)
         util.write_gcode(OUTPUT_FILE_NAME, line, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, False)
+    else:
+        for line in first_ring.geoms:
+            # plot starting line
+            first_ring_geoseries = gpd.GeoSeries(line)
+            first_ring_geoseries.plot(ax=ax[0], color='blue', edgecolor = 'blue', linewidth=1)
+            util.write_gcode(OUTPUT_FILE_NAME, line, LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE, False)
+
+            #Make image
+            #file_name = util.image_number(image_name_list)   
+            #plt.savefig(file_name, dpi=200)
+            #image_name_list.append(file_name + ".png")
 
 """
 # Turn images into gif + MP4
 print("Making gif")
-with imageio.get_writer('mygif.gif', mode='I', fps=20) as writer:
+with imageio.get_writer('output/output_gif.gif', mode='I', fps=20) as writer:
     for file_name in image_name_list:
         image = imageio.imread(file_name)
         writer.append_data(image)
@@ -280,9 +303,8 @@ clip = mp.VideoFileClip("output/output_gif.gif")
 clip.write_videofile("output/output_video.mp4")
 """
 # Build a few layers on top of the overhanging area
-
 for i in range(10):
-    util.write_gcode(OUTPUT_FILE_NAME, Polygon(boundary_line), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE*10, close_loop=True)
+    util.write_gcode(OUTPUT_FILE_NAME, Polygon(boundary_line).buffer(-LINE_WIDTH/2), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE*3, close_loop=True)
     with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
         gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z+LAYER_HEIGHT*i)} F500\n")
         

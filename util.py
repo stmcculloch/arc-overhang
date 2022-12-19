@@ -235,7 +235,7 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     return Polygon(fixed_arc) 
 
 def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, threshold, ax, fig, depth, 
-                 filename_list, r_max, line_width, gcode_file, layer_height, filament_diameter, e_multiplier, feedrate):
+                 filename_list, r_max, min_arcs, line_width, gcode_file, layer_height, filament_diameter, e_multiplier, feedrate):
     """ 
     Main recursive function (I'm deeply sorry for the number of arguments here.)
     
@@ -260,10 +260,12 @@ def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, 
     # Limit maximum circle size
     r_final = min(r_final - threshold, r_max)
 
-    small_arc_radius = 1
+    small_arc_radius = 0.5  #1
+
+    # Overlap arc with the previous one. 
     circle_moved = False
     if r_final > small_arc_radius:
-        next_point = move_toward_point(next_point, prev_circle.centroid, line_width*1.5)
+        next_point = move_toward_point(next_point, prev_circle.centroid, 0) # change 0 to any distance in mm to move the arcs 
         circle_moved = True
     
     # Update the current boundary polygon to include the previous circle
@@ -287,7 +289,7 @@ def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, 
         curr_arc = Polygon(next_arc)
         longest_distance = r
         
-        #Slow down for all small arcs
+        #Slow down and reduce flow for all small arcs
         if circle_moved and r < small_arc_radius:
             speed_modifier = 0.25
             e_modifier = 0.25
@@ -305,22 +307,21 @@ def arc_overhang(arc, boundary, starting_line_angle, n, prev_poly, prev_circle, 
         r += line_width
         # Create image
         #filename = image_number(filename_list)   
-        #plt.savefig(filename, dpi=72)
+        #plt.savefig(filename, dpi=200)
         #filename_list.append(filename + ".png")
         
     remaining_empty_space = remaining_empty_space.difference(next_circle)
-    # save image
     
     next_point, longest_distance, _ = get_farthest_point(curr_arc, boundary, remaining_empty_space)
     branch = 0    
     # Create new arcs on the same base arc until no more points on the base arc are farther than the threshold distance.
-    while (longest_distance > threshold+3*line_width):
+    while (longest_distance > threshold + min_arcs*line_width): 
         branch += 1
 
         #Create a new arc on curr_arc
         next_arc, remaining_empty_space, filename_list = arc_overhang(
             curr_arc, boundary, starting_line_angle, n, remaining_empty_space, next_circle, threshold, ax, fig, depth + 1, 
-            filename_list, r_max, line_width, gcode_file, layer_height, filament_diameter, e_multiplier, feedrate)
+            filename_list, r_max, min_arcs, line_width, gcode_file, layer_height, filament_diameter, e_multiplier, feedrate)
 
         # Get the farthest distance between curr_arc and the boundary
         next_point, longest_distance, closest_point_on_poly = get_farthest_point(
