@@ -220,7 +220,7 @@ curr_arc = starting_arc
 starting_point = util.move_toward_point(starting_point, affinity.rotate(p1, 90, LineString([p1, p2]).centroid), LINE_WIDTH*0.5) 
 
 # Create arcs until we reach the edge of the polygon
-while r < r_start-THRESHOLD:
+while r < 10*r_start-THRESHOLD: #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Just a hacky way to limit the arc generation to 1 big huge arc.
 
     # Create a circle based on point location, radius, n
     next_circle = Polygon(util.create_circle(starting_point.x, starting_point.y, r, N))
@@ -264,7 +264,7 @@ while longest_distance > THRESHOLD + MIN_ARCS*LINE_WIDTH:
                                                                         FEEDRATE)
     next_point, longest_distance, _ = util.get_farthest_point(curr_arc, boundary_line, remaining_empty_space)
 
-# Add concentric rings around the outside of the perimeter
+"""# Add concentric rings around the outside of the perimeter
 # TODO don't use a for loop.....
 for i in range(100):
     first_ring = LineString(Polygon(boundary_line).buffer(-99*LINE_WIDTH + LINE_WIDTH*i).exterior.coords)
@@ -288,7 +288,7 @@ for i in range(100):
             #Make image
             #file_name = util.image_number(image_name_list)   
             #plt.savefig(file_name, dpi=200)
-            #image_name_list.append(file_name + ".png")
+            #image_name_list.append(file_name + ".png")"""
 
 """
 # Turn images into gif + MP4
@@ -303,6 +303,12 @@ clip = mp.VideoFileClip("output/output_gif.gif")
 clip.write_videofile("output/output_video.mp4")
 """
 # Build a few layers on top of the overhanging area
+curr_z += LAYER_HEIGHT
+with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
+        gcode_file.write(f"G1 Z{'{0:.3f}'.format(curr_z)} F500\n")
+        curr_z += LAYER_HEIGHT
+
+
 for i in range(10):
     util.write_gcode(OUTPUT_FILE_NAME, Polygon(boundary_line).buffer(-LINE_WIDTH/2), LINE_WIDTH, LAYER_HEIGHT, FILAMENT_DIAMETER, ARC_E_MULTIPLIER, FEEDRATE*3, close_loop=True)
     with open(OUTPUT_FILE_NAME, 'a') as gcode_file:
