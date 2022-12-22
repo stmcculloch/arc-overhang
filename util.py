@@ -30,11 +30,12 @@ def longest_edge(poly):
     """
     poly_coords = list(poly.exterior.coords)
     max_length = 0
+    buffer = 0.1 # if all segments are same length, this helps return the first segment.
     prev_p = Point(poly_coords[-1])
     for p in poly_coords:
         curr_p = Point(p)
         length = curr_p.distance(prev_p)
-        if length > max_length:
+        if length > max_length+buffer:
             max_length = length
             start = prev_p
             end = curr_p
@@ -163,10 +164,10 @@ def image_number(list_of_files):
 def get_exterior(poly):
 
     #extract just the first polygon if there's ever a multipolygon or geometry collection
-    for geom in getattr(poly, 'geoms', [poly]):
+    """for geom in getattr(poly, 'geoms', [poly]):
         if geom.geom_type == 'Polygon':
             poly = geom
-            break
+            break"""
 
     return [
         coord
@@ -205,9 +206,9 @@ def create_arc(circle, remaining_empty_space, ax, depth):
     crescent_exterior = get_exterior(crescent)
 
     # Plot the arcs. Comment the following 2 lines to make the code run faster
-    crescent_geoseries = gpd.GeoSeries(Polygon(crescent_exterior))
-    crescent_geoseries.plot(ax=ax[0], color='none', edgecolor='black', linewidth=1) # set color='none' for black and white plotting
-    crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
+    #crescent_geoseries = gpd.GeoSeries(Polygon(crescent_exterior))
+    #crescent_geoseries.plot(ax=ax[0], color='none', edgecolor='black', linewidth=1) # set color='none' for black and white plotting
+    #crescent_geoseries.plot(ax=ax[1], color=num_to_rgb(depth), edgecolor='black', linewidth=1) # set color='none' for black and white plotting
     
     empty_exterior = get_exterior(remaining_empty_space)
 
@@ -217,7 +218,7 @@ def create_arc(circle, remaining_empty_space, ax, depth):
             arc.append(coord)
 
     if len(arc) == 0:
-        print("CIRCLE COMPLETELY ENGULFED")
+        #print("CIRCLE COMPLETELY ENGULFED")
         return None
 
     elif len(arc) <= 2:
