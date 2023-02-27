@@ -13,7 +13,7 @@ I've stopped working on this repo because other community members have taken thi
 
 - **Python Script (use for testing new algorithms):** @nicolai-wachenschwan has created a post-processing script for PrusaSlicer that can be used to generate arc overhangs! It's all in Python so it is quite easy to modify and add your own changes. [See progress here](https://github.com/nicolai-wachenschwan/arc-overhang-prusaslicer-integration) 
 
-![post-processing script](examples/post_processing_script.png)
+![post-processing script](examples/post-processing-script.png)
 
 ## 0. Videos
 
