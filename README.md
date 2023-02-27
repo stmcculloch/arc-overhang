@@ -2,6 +2,19 @@
 
 A 3D printer slicing algorithm that lets you print 90° overhangs without support material. I hope to turn this into a standard feature in 3D printing slicers.
 
+## Updates! (Feb 2023): 
+
+I've stopped working on this repo because other community members have taken this idea a lot further! I've linked to them below.
+
+- For most recent updates on arc overhangs, see the [discussion here](https://github.com/stmcculloch/arc-overhang/issues/10)
+- **PrusaSlicer Implementation:** @rvmn has implemented arc overhangs in a slicer "Pleccer" which is a fork of PrusaSlicer! [Follow progress here](https://github.com/rvmn/SuperPleccer/discussions) 
+
+![pleccer](examples/pleccer.png)
+
+- **Python Script (use for testing new algorithms):** @nicolai-wachenschwan has created a post-processing script for PrusaSlicer that can be used to generate arc overhangs! It's all in Python so it is quite easy to modify and add your own changes. [See progress here](https://github.com/nicolai-wachenschwan/arc-overhang-prusaslicer-integration) 
+
+![post-processing script](examples/post_processing_script.png)
+
 ## 0. Videos
 
 - Arc Overhang Initial Video: https://youtu.be/fjGeBYOPmHA
