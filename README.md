@@ -8,12 +8,7 @@ I've stopped working on this repo because other community members have taken thi
 
 - For most recent updates on arc overhangs, see the [discussion here](https://github.com/stmcculloch/arc-overhang/issues/10)
 - **PrusaSlicer Implementation:** @rvmn has implemented arc overhangs in a slicer "Pleccer" which is a fork of PrusaSlicer! [Follow progress here](https://github.com/rvmn/SuperPleccer/discussions) 
-
-![pleccer](examples/pleccer.png)
-
 - **Python Script (use for testing new algorithms):** @nicolai-wachenschwan has created a post-processing script for PrusaSlicer that can be used to generate arc overhangs! It's all in Python so it is quite easy to modify and add your own changes. [See progress here](https://github.com/nicolai-wachenschwan/arc-overhang-prusaslicer-integration) 
-
-![post-processing script](examples/post-processing-script.png)
 
 ## 0. Videos
 
