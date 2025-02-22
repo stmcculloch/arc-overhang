@@ -114,17 +114,23 @@ By default, the output gcode should print fine on most standard desktop FDM prin
 If you want to try the prints without installing, I added some test print gcode files in the root directory that you can directly download. They should print fine on most printers although you may need to manually adjust the gcode so that it works with your printer.
 
 1. Clone this repo to your computer
-2. Install python 3 and required packages.
+2. Enter arc-overhang directory.
+
+   ```
+   cd arc-overhang
+   ```
+
+3. Install python 3 and required packages.
 
     ```
     python3 -m pip install -r requirements.txt
     ```
 
-3. Check out the parameters at the top of `main.py` for print settings, and to change how the arcs are generated. 
-4. Change the shape generation parameters to customize the shape, size, and spikiness of the random shape. Or create your own shape. It should work on any `Polygon`.
-5. Double check the start and end gcode will work with your printer. 
-6. Run the code.
-7. Preview the gcode (found in the output folder) using [Repetier Host](https://www.repetier.com/download-now/)
-8. Print it! If you get a successful print using this algorithm, I'd love to hear about it.
+4. Check out the parameters at the top of `main.py` for print settings, and to change how the arcs are generated. 
+5. Change the shape generation parameters to customize the shape, size, and spikiness of the random shape. Or create your own shape. It should work on any `Polygon`.
+6. Double check the start and end gcode will work with your printer. 
+7. Run the code.
+8. Preview the gcode (found in the output folder) using [Repetier Host](https://www.repetier.com/download-now/)
+9. Print it! If you get a successful print using this algorithm, I'd love to hear about it.
 
 
